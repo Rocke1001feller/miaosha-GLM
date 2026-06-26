@@ -4,6 +4,12 @@
 import { storage } from '#imports';
 import { buildAutoFirePlan, type AutoFirePlanShot } from '../lib/api/fire-plan';
 import { buildStrikeQueue, type StrikeShot, type StrikeTarget } from '../lib/api/strike-plan';
+import {
+  removeStrikeReservations,
+  restoreUnusedStrikeReservations,
+  strikeTicketKey,
+  type StrikeReservationTicket,
+} from '../lib/api/strike-reservation';
 import { calibrate } from '../lib/api/runtime-calibration';
 import { fireStore, FIRE_CONFIG_DEFAULT, type FireConfig } from '../lib/settings/fire';
 import { SALE_ALARM_MINUTES, SALE_TIME_DEFAULT, getNextSaleTime, saleTimeStore, type SaleTimeConfig } from '../lib/settings/sale-time';
@@ -1047,7 +1053,11 @@ export default defineContentScript({
     }
 
     // ── Unified strike sequence: shared by default strike and burst mode ──
-    let currentStrikeCancel: (() => void) | null = null;
+    interface StrikeCancelOptions {
+      restorePendingTickets?: boolean;
+    }
+
+    let currentStrikeCancel: ((options?: StrikeCancelOptions) => void) | null = null;
 
     interface StrikeSequenceOptions {
       label: string;
@@ -1062,6 +1072,10 @@ export default defineContentScript({
       if (!auth) {
         postToOverlay({ type: 'FIRE_RESULT', line: '> No auth headers' });
         return;
+      }
+
+      if (currentStrikeCancel) {
+        currentStrikeCancel({ restorePendingTickets: true });
       }
 
       const { valid, targets, fireConfig } = await getLaunchSnapshot();
@@ -1080,9 +1094,15 @@ export default defineContentScript({
         return;
       }
 
-      // Consume all tickets used in this strike.
-      const usedKeys = new Set(plan.shots.map((s) => s.ticket + ':' + s.randstr + ':' + s.createdAt));
-      _ticketPool = _ticketPool.filter((t: any) => !usedKeys.has(t.ticket + ':' + t.randstr + ':' + t.createdAt));
+      // Reserve the whole queue up front, but only permanently spend a ticket
+      // once its /pay/preview request is actually sent.
+      const reservedTickets: StrikeReservationTicket[] = plan.shots.map((s) => ({
+        ticket: s.ticket,
+        randstr: s.randstr,
+        createdAt: s.createdAt,
+      }));
+      const spentKeys = new Set<string>();
+      _ticketPool = removeStrikeReservations(_ticketPool, reservedTickets);
       writePageTicketStore();
       const remainingInfo = await getTicketInfo();
       postToOverlay({ type: 'TICKET_COUNT', count: remainingInfo.count, tickets: remainingInfo.tickets });
@@ -1112,17 +1132,36 @@ export default defineContentScript({
       let cancelled = false;
       const timers: ReturnType<typeof setTimeout>[] = [];
 
-      const cancelAll = () => {
+      const cancelAll = (cancelOptions?: StrikeCancelOptions) => {
         if (cancelled) return;
         cancelled = true;
-        currentStrikeCancel = null;
+        if (currentStrikeCancel === cancelAll) currentStrikeCancel = null;
         previewAbortCtrl.abort();
         for (const id of timers) clearTimeout(id);
         timers.length = 0;
+        if (cancelOptions?.restorePendingTickets) {
+          const restored = restoreUnusedStrikeReservations({
+            pool: _ticketPool,
+            reserved: reservedTickets,
+            spentKeys,
+            now: Date.now(),
+            ticketTtlMs: TICKET_TTL_MS,
+            maxPoolSize: TICKET_POOL_MAX,
+          });
+          _ticketPool = restored.pool;
+          writePageTicketStore();
+          void getTicketInfo().then((info) => {
+            postToOverlay({ type: 'TICKET_COUNT', count: info.count, tickets: info.tickets });
+          });
+          if (restored.restoredCount > 0) {
+            postToOverlay({
+              type: 'FIRE_RESULT',
+              line: `> Previous ${options.label} cancelled: restored ${restored.restoredCount} queued tickets`,
+            });
+          }
+        }
       };
 
-      // Cancel any previous manual sequence before starting a new one.
-      if (currentStrikeCancel) currentStrikeCancel();
       currentStrikeCancel = cancelAll;
 
       const total = plan.shots.length;
@@ -1132,6 +1171,7 @@ export default defineContentScript({
         if (cancelled) return 'cancelled';
         const tag = '>[#' + (idx + 1) + '/' + total + '][P' + shot.priority + '] ' + shot.productId.slice(-6);
         const t1 = Date.now();
+        spentKeys.add(strikeTicketKey(shot));
         try {
           const result = await bigmodelAdapter.orderPipeline.run({
             platform: 'bigmodel',
