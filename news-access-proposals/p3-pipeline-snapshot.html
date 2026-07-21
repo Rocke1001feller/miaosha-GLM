@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>P3 · 构建期全文快照（扩展现有管线）</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="./index.html">← 返回总览</a>
+
+  <header class="hero">
+    <span class="kicker">方案 P3（推荐主力）</span>
+    <h1>构建期全文快照：把正文搬进你的数据管线</h1>
+    <p>底层逻辑：<strong>点击时完全不再访问境外源</strong>。你已有每 2 小时抓 100+ 源的 GitHub Actions 管线和静态托管（Pages）——在管线里加一步「逐条抓原文 → 正文提取 → 存进数据分支」，popup 点击时打开的是自家托管的阅读页。<b>把运行时问题变成构建时问题</b>，是五个方案里可控性最强、长期成本最低的。</p>
+  </header>
+
+  <div class="card">
+    <h3>点击时序</h3>
+    <div class="flow">用户在 popup 点击新闻卡片
+  → 打开 chrome-extension:// 阅读页 reader.html?id=&lt;news-id&gt;（或托管快照页 URL）
+  → 阅读页从 data 分支/Pages 读取该条目的正文 JSON（与列表同源同域）
+  → 即时渲染，零境外请求，源站挂了也能读</div>
+  </div>
+
+  <div class="card">
+    <h3>管线改造（在 ai-news 仓库内完成）</h3>
+    <ul class="dots">
+      <li>新增 <code>src/snapshot.ts</code>：遍历 latest-24h 的 ~1000 条 URL，并发 10–20 抓取，trafilatura/Readability 抽正文，产出 <code>data/articles/&lt;id&gt;.json</code>（title/byline/textHTML/fetchedAt/status）。失败的记 status，前端降级回原链。</li>
+      <li>正文走 data 分支（orphan 单提交）随每次快照 force-push——只保留 24h 窗口 + 7d 可选，体积可控（纯文本每条约 5–20KB，1000 条约 10–30MB）。</li>
+      <li>web/dist 同步产出阅读页模板；或 popup 内置 reader 组件直接渲染 data JSON。</li>
+      <li>运行时长预算：1000 篇 × 平均 1s / 并发 15 ≈ 1.5–3 分钟，可接受。</li>
+    </ul>
+    <div class="logic">为什么管线端抓取成功率更高：GitHub Actions 的 IP 在境外数据中心，干净、无用户侧干扰；且失败可重试、可留档，比在用户点击那一刻实时抓更稳。</div>
+  </div>
+
+  <div class="card">
+    <h3>成本</h3>
+    <span class="tag free">0 边际成本</span>
+    <ul class="dots">
+      <li>public 仓库的 GitHub Actions 免费、Pages 免费；你已在跑，新增的只是每次运行的几分钟计算。</li>
+      <li>无服务器、无第三方服务、无 API key。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>优点</h3>
+    <ul class="dots">
+      <li><b>点击零延迟、零境外依赖</b>——阅读体验和本地应用一样；</li>
+      <li>离线/源站宕机/源站被墙，对已快照条目<b>完全无感</b>；</li>
+      <li>无滥用面：没有开放中继，内容只进不出；</li>
+      <li>顺带获得全文搜索、AI 摘要、离线缓存等后续能力的原材料。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>局限与风险</h3>
+    <ul class="dots">
+      <li>只覆盖数据集内条目（正是你的需求范围，但要意识到：用户分享给朋友的链接不在保障内）；</li>
+      <li>data 分支体积与管线时长会增长（纯文本可控；若未来要图片快照则需另想办法，如图片走原站 CDN 链接）；</li>
+      <li>正文提取命中率约 80–95%，付费墙/JS 渲染源仍会失败——需要失败降级清单。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>落地步骤</h3>
+    <ul class="dots">
+      <li>① ai-news 仓库加 snapshot 步骤（利用 enhance-ai-news-ux 分支）；</li>
+      <li>② data 分支结构扩展 <code>articles/</code> 目录；</li>
+      <li>③ 扩展 popup 加阅读页/阅读模式（NEWS 内嵌或新 tab）；</li>
+      <li>④ 统计各域名快照成功率，顽固源走 P1/P2 兜底。</li>
+    </ul>
+  </div>
+
+  <footer>P3 · 运行时问题 → 构建时问题 · 推荐主力</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>B4 · 构建期 LLM 精翻（推荐主线）</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="./index.html">← 返回总览</a>
+
+  <header class="hero">
+    <span class="kicker">方案 B4（推荐主线）</span>
+    <h1>构建期 LLM 精翻：把双语做进快照契约</h1>
+    <p>底层逻辑：<strong>与 P3 完全同构</strong>——快照步骤里，对 content_html 的文本节点逐段调 LLM（GLM-4.5-Flash / DeepSeek 等），产出结构完全一致的 <code>content_html_zh</code>，与英文快照一起进 data 分支与 Pages。用户打开即是双语，质量是五个方案里最好的。</p>
+  </header>
+
+  <div class="card">
+    <h3>工作方式</h3>
+    <div class="flow">snapshot 步骤（已有）产出 content_html
+  → 新增 translate 步骤：
+      遍历 DOM 文本节点（跳过 pre/code）→ 按段落批量调 LLM
+      同构替换 → content_html_zh（标签结构 1:1 保留）
+      缓存 paragraph 哈希，重复内容不重复翻
+  → 快照 JSON: { content_html, content_html_zh, translated: bool }
+  → reader 页：并行渲染英块 + 中块（灰显），三态切换</div>
+  </div>
+
+  <div class="card">
+    <h3>成本</h3>
+    <span class="tag mid">≈0 到极低</span>
+    <ul class="dots">
+      <li>GLM-4.5-Flash 有免费档（够每天 2 次 × 443 篇的规模）；DeepSeek 约几元/百万 token，月成本个位数人民币。</li>
+      <li>LLM 并发与上下文大，443 篇全文翻完通常几分钟，比 B1 的免费端点快且稳。</li>
+      <li>key 放 GitHub secrets，管线自主可控。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>优点</h3>
+    <ul class="dots">
+      <li><b>质量天花板</b>：LLM 懂上下文、能遵守术语表（agent=智能体、vibe coding 保留、产品名不翻）、能跳过代码块；</li>
+      <li>用户打开即双语：零客户端成本、零网络依赖、对所有人一致；</li>
+      <li>与 P3 架构同构：失败有快照、增量有缓存、问题可留档复跑；</li>
+      <li>后续可平滑加「AI 摘要（真摘要，非截取）」——同一个 LLM 步骤顺带产出。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>局限与风险</h3>
+    <ul class="dots">
+      <li>需要申请并管理一个 LLM API key（一次性工作）；</li>
+      <li>LLM 偶尔会漏段或改写结构——需要校验（段落数对比，不一致则该段保留英文）；</li>
+      <li>快照体积约翻倍（可接受，data 分支单提交上限还远）。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>落地步骤</h3>
+    <ul class="dots">
+      <li>① bigmodel 开放平台拿 GLM-4.5-Flash key → GitHub secrets 加 <code>LLM_API_KEY</code>；</li>
+      <li>② ai-news 加 <code>src/translate/llm.ts</code>（批量段落、术语表、结构校验、缓存）；</li>
+      <li>③ snapshot 步骤挂接 translate；快照 JSON 加 <code>content_html_zh/translated</code>；</li>
+      <li>④ reader 页双语渲染 + 三态切换；扩展类型契约同步；</li>
+      <li>⑤ 跑一轮看质量与失败段，再全量放开。</li>
+    </ul>
+  </div>
+
+  <footer>B4 · 与 P3 同构 · 质量与体验双优的主线</footer>
+</div>
+</body>
+</html>

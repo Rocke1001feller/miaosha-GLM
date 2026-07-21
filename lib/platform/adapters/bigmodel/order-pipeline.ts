@@ -21,6 +21,13 @@ export interface BigmodelPreviewResponse {
   };
 }
 
+// ── /pay/preview response classification: subject -> target -> cause ──
+export interface ErrorResponsibility {
+  subject: string;
+  target: string;
+  cause: string;
+}
+
 export interface ClassifiedShotResult {
   outcome:
     | 'success'
@@ -34,6 +41,7 @@ export interface ClassifiedShotResult {
   code: number;
   serverMsg: string;
   rawServerMsg: string;
+  responsibility: ErrorResponsibility;
 }
 
 export function classifyPreviewError(body: { code?: number; msg?: string }): ClassifiedShotResult {
@@ -41,18 +49,58 @@ export function classifyPreviewError(body: { code?: number; msg?: string }): Cla
   const raw = body.msg || '';
 
   if (code === 500 && raw.includes('验证码校验服务异常')) {
-    return { outcome: 'captchaService', code, serverMsg: '【智谱 --> 腾讯验证码核销：QPS 超限】' + raw, rawServerMsg: raw };
+    return {
+      outcome: 'captchaService',
+      code,
+      serverMsg: '【智谱 --> 腾讯验证码核销：超过了《每秒并发请求量（QPS）限制》】' + raw,
+      rawServerMsg: raw,
+      responsibility: { subject: '智谱', target: '腾讯验证码核销', cause: '超过了《每秒并发请求量（QPS）限制》' },
+    };
   }
   if (code === 500 && raw.includes('验证码Ticket不合法')) {
-    return { outcome: 'captchaInvalid', code, serverMsg: '【插件/用户 --> 腾讯验证码核销：ticket 无效或已过期】' + raw, rawServerMsg: raw };
+    return {
+      outcome: 'captchaInvalid',
+      code,
+      serverMsg: '【插件/用户 --> 腾讯验证码核销：ticket 无效或已过期】' + raw,
+      rawServerMsg: raw,
+      responsibility: { subject: '插件/用户', target: '腾讯验证码核销', cause: 'ticket 无效或已过期' },
+    };
   }
   if (code === 500 && raw.includes('验证存在安全风险')) {
-    return { outcome: 'captchaRisk', code, serverMsg: '【腾讯验证码风控 --> 当前请求：环境存在安全风险】' + raw, rawServerMsg: raw };
+    return {
+      outcome: 'captchaRisk',
+      code,
+      serverMsg: '【腾讯验证码风控 --> 当前请求：环境存在安全风险】' + raw,
+      rawServerMsg: raw,
+      responsibility: { subject: '腾讯验证码风控', target: '当前请求', cause: '环境存在安全风险' },
+    };
   }
   if (code === 555 || raw.toLowerCase().includes('system busy')) {
-    return { outcome: 'busy', code, serverMsg: '【智谱 --> 当前用户：2 秒滑动窗口限流】' + raw, rawServerMsg: raw };
+    return {
+      outcome: 'busy',
+      code,
+      serverMsg: '【智谱 --> 当前用户：2 秒滑动窗口限流】' + raw,
+      rawServerMsg: raw,
+      responsibility: { subject: '智谱', target: '当前用户', cause: '2 秒滑动窗口限流' },
+    };
   }
-  return { outcome: 'error', code, serverMsg: '【智谱/网络 --> 插件：未知服务端错误】' + raw, rawServerMsg: raw };
+  return {
+    outcome: 'error',
+    code,
+    serverMsg: '【智谱/网络 --> 插件：未知服务端错误】' + raw,
+    rawServerMsg: raw,
+    responsibility: { subject: '智谱/网络', target: '插件', cause: '未知服务端错误' },
+  };
+}
+
+export function classifyNetworkError(message: string): ClassifiedShotResult {
+  return {
+    outcome: 'neterr',
+    code: 0,
+    serverMsg: '【插件/网络 --> 智谱：请求失败】' + message,
+    rawServerMsg: message,
+    responsibility: { subject: '插件/网络', target: '智谱', cause: '请求失败' },
+  };
 }
 
 export class BigmodelOrderPipeline implements IOrderPipeline {
@@ -84,6 +132,7 @@ export class BigmodelOrderPipeline implements IOrderPipeline {
         },
         body: JSON.stringify({
           productId: ctx.productId,
+          invitationCode: '',
           ticket: ctx.ticket.ticket,
           randstr: ctx.ticket.randstr || '',
         }),
@@ -117,7 +166,7 @@ export class BigmodelOrderPipeline implements IOrderPipeline {
       return {
         success: false,
         error: e?.message || 'network error',
-        metadata: { classified: { outcome: 'neterr', code: 0, serverMsg: e?.message, rawServerMsg: e?.message } },
+        metadata: { classified: classifyNetworkError(e?.message || 'network error') },
       };
     }
   }

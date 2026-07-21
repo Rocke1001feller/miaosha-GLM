@@ -1,7 +1,7 @@
-# 智谱秒杀助手 — 测试架构指南
+# 智能Coding Plan助手 — 测试架构指南
 
 > **适用版本**: WXT 0.20.26 · Svelte 5 · Vitest 4 · 构建日期 2026-05  
-> **状态**: ✅ 65 个测试全部通过 (`pnpm test`)
+> **状态**: ✅ 101 个测试全部通过 (`pnpm test`)
 
 ---
 
@@ -90,32 +90,42 @@ miaosha-GLM/
 │   ├── setup.ts                     ← 全局 setup：jest-dom matchers + fakeBrowser.reset()
 │   │
 │   ├── unit/                        ← 纯单元测试（不需要真实浏览器）
+│   │   ├── _vm-harness.ts               ← 公共 vm 沙箱工厂（非测试文件）
 │   │   ├── lib/
 │   │   │   ├── api/
 │   │   │   │   ├── catalog.test.ts          ← API_CATALOG 结构契约
-│   │   │   │   ├── auth-store.test.ts       ← authStore.get/set/isReady
-│   │   │   │   ├── runtime-calibration.test.ts  ← median() + calibrate() 逻辑
-│   │   │   │   └── client.test.ts           ← buildHeaders() 纯函数
+│   │   │   │   ├── fire-plan.test.ts        ← buildAutoFirePlan 时序/ticket 分配
+│   │   │   │   └── strike-plan.test.ts      ← buildStrikeQueue 加权轮询
+│   │   │   ├── platform/
+│   │   │   │   └── classify-preview-error.test.ts ← 错误分类单源契约
 │   │   │   └── settings/
 │   │   │       ├── sale-time.test.ts        ← saleTimeStore + 默认值合并
+│   │   │       ├── fire.test.ts             ← fireStore 默认值/非法值回退
 │   │   │       └── dev.test.ts              ← devEnvironment 标量偏好存储
 │   │   │
 │   │   ├── entrypoints/
-│   │   │   └── background.test.ts           ← getNextSaleTime 时区算法
+│   │   │   ├── background.test.ts           ← alarm/badge 调度 + getNextSaleTime
+│   │   │   └── bm-capture-scope.test.ts     ← bm-capture 模块作用域静态检查
 │   │   │
-│   │   └── bm-main/
-│   │       ├── _harness.ts                  ← vm 沙箱加载工具（非测试文件）
-│   │       └── product.test.ts              ← 05-product.js buildProductMatrix
+│   │   ├── bm-main/
+│   │   │   ├── _harness.ts                  ← vm 沙箱薄封装（非测试文件）
+│   │   │   ├── product.test.ts              ← 05-product.js buildProductMatrix
+│   │   │   ├── product-loading.test.ts      ← loadProducts 编排/重试/WAF 规避
+│   │   │   └── header-injection.test.ts     ← 10-header.js L1 注入竞态回归
+│   │   │
+│   │   └── volc-main/
+│   │       ├── _harness.ts                  ← vm 沙箱薄封装（非测试文件）
+│   │       ├── pricing.test.ts              ← calculatePriceV5 重试/退避
+│   │       └── config.test.ts               ← 00-config 运行时平台探测
 │   │
 │   ├── component/                   ← Svelte 组件测试
 │   │   └── popup/
 │   │       └── Topbar.svelte.test.ts        ← DEV/PROD 切换 + 回调
 │   │
-│   └── integration/                 ← 跨层集成测试（暂无）
-│
 └── scripts/                         ← 构建与打包辅助脚本
-    ├── build-overlay.js             ← 生成 public/bm-main.js
-    └── zip-prepare.js               ← 为 wxt zip 做前置准备
+    ├── build-overlay.js             ← 拼接 src/*-main → public/*.js
+    ├── verify-no-minifier-collision.mjs ← 构建产物标识符冲突检查
+    └── zip-prepare.mjs              ← 为 wxt zip 做前置准备
 ```
 
 > **命名约定**  
@@ -209,7 +219,7 @@ beforeEach(() => {
 
 ### 5.1 纯逻辑单元测试
 
-**适用**：`lib/api/catalog.ts`, `lib/api/runtime-calibration.ts`, `src/bm-main/01-utils.js`（通过 harness）
+**适用**：`lib/api/catalog.ts`, `lib/api/fire-plan.ts`, `lib/api/strike-plan.ts`, `src/bm-main/01-utils.js`（通过 harness）
 
 无需任何 mock，直接 import 函数测试。
 
@@ -338,7 +348,7 @@ unmount(component);
 
 ### 5.5 集成测试（chrome.tabs / chrome.scripting mock）
 
-**当前状态**：`tests/integration/` 目录为空，暂无集成测试。
+**当前状态**：`tests/integration/` 目录不存在，暂无集成测试。
 
 **适用场景**：`lib/api/auth-store.captureFromTab()`, `lib/api/client.ts`
 

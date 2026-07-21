@@ -1,26 +1,28 @@
 <script lang="ts">
-  const MODE_ROWS = [
-    { name: 'Auto', meaning: '自动模式', behavior: '插件根据下一次秒杀时间自动倒计时，并在 saleTime - RTT/2 - 40ms 触发 strike()，你只需提前准备好验证码。' },
-    { name: 'Manual', meaning: '手动模式', behavior: '禁用自动倒计时，只有点击 FIRE 按钮才会发射；适合想自己把握时机测试或手动窗口。' },
+  const TRIGGER_ROWS = [
+    { name: 'Auto', meaning: '自动开火', behavior: '按 Options 设置的秒杀时间，在服务器时刻 T-0 前 10ms 触发；本地与服务器时钟差由 batch-preview 响应的 Date 头实时校准。' },
+    { name: 'Stock Flip', meaning: '翻转触发', behavior: 'T-90s 起每 4.3s 轮询 batch-preview，一旦所选商品 soldOut 从 true 翻为 false，立即开枪，不等倒计时。' },
+    { name: 'Manual', meaning: '手动开火', behavior: '点击 FIRE 串行立即按同一策略开打，用于补枪或测试。' },
   ];
 
   const FIELD_ROWS = [
-    { field: 'Mode', desc: 'auto / manual，决定“什么时候发射”。' },
-    { field: 'Burst Interval', desc: 'Burst 模式下每枪之间的间隔（ms）。推荐 2100ms。' },
-    { field: 'Pay', desc: '传给 create-sign 的支付方式，ALI 或 WE_CHAT。' },
-    { field: 'FIRE (0)', desc: '当前可发射次数；为 0 时禁用，提示选商品 / 录验证码。' },
-    { field: 'Auth: pending', desc: '授权头状态；登录并刷新后会变绿。' },
-    { field: 'T-xxx.xs', desc: 'auto 模式下距离自动发射的倒计时。' },
+    { field: 'Strike Interval', desc: '串行发射的最小间隔，下限 2100ms，默认 2100ms。' },
+    { field: 'Pay', desc: 'create-sign 的支付方式：ALI 直连收银台；WE_CHAT 走原生弹窗二维码。' },
+    { field: 'FIRE 串行 (n)', desc: 'n 为当前有效票数；为 0 时按钮禁用。' },
+    { field: 'Auth: pending', desc: '授权头状态；登录并刷新页面后变绿。' },
+    { field: 'Auto: waiting…', desc: 'Auto 倒计时 / 开火结果 / 停火原因。' },
+    { field: 'Budget', desc: '每场 preview 预算 8 发，打满即停（WAF 自保），遇 405 立即停火。' },
   ];
 
   const ERROR_ROWS = [
-    { outcome: '成功', code: '200 + bizId', subject: '智谱', target: '插件', cause: '锁单成功，返回 bizId', note: ' Fire Matrix 变绿，自动打开支付页。' },
-    { outcome: '售罄', code: '200 sold-out', subject: '智谱', target: '插件', cause: '该商品今日库存已售罄', note: '继续打其他优先级商品。' },
-    { outcome: '限流', code: '555', subject: '智谱', target: '当前用户', cause: '2 秒滑动窗口限流（阈值=1）', note: '建议提高 Burst Interval ≥2100ms。' },
-    { outcome: '验证码繁忙', code: '500', subject: '智谱', target: '腾讯验证码核销', cause: '超过《每秒并发请求量（QPS）限制》', note: '秒杀瞬间大量请求涌入腾讯云导致，非插件 bug。' },
-    { outcome: '验证码失效', code: '500', subject: '插件/用户', target: '腾讯验证码核销', cause: 'ticket 无效或已过期', note: '请重新录入验证码。' },
-    { outcome: '验证码风控', code: '500', subject: '腾讯验证码风控', target: '当前请求', cause: '环境存在安全风险', note: '尝试刷新页面或更换浏览器环境。' },
-    { outcome: '网络错误', code: '0 / network', subject: '插件/网络', target: '智谱', cause: '请求未到达服务端或连接超时', note: '检查网络或稍后重试。' },
+    { outcome: '成功', code: '200 + bizId', subject: '智谱', target: '插件', cause: '锁单成功，返回 bizId', note: 'ALI 直连收银台新标签打开；WE_CHAT 弹原生二维码。' },
+    { outcome: '售罄', code: '200 sold-out', subject: '智谱', target: '插件', cause: '库存门未放行', note: '不核销票，状态机按间隔继续补枪。' },
+    { outcome: '限流', code: '555', subject: '智谱', target: '当前用户', cause: '2 秒滑动窗口限流（阈值=1）', note: '不核销票；保持间隔 ≥2100ms 即可避免。' },
+    { outcome: 'WAF 封锁', code: 'HTTP 405', subject: '智谱 WAF', target: '当前用户', cause: 'preview 累计发送过多（约 15 发）', note: '立即停火；封锁持续 30-60 分钟。' },
+    { outcome: '验证码繁忙', code: '500', subject: '智谱', target: '腾讯验证码核销', cause: '超过《每秒并发请求量（QPS）限制》', note: '秒杀瞬间腾讯云核销拥堵，非插件 bug。' },
+    { outcome: '验证码失效', code: '500', subject: '插件/用户', target: '腾讯验证码核销', cause: 'ticket 无效或已过期', note: '票 TTL 300 秒，换最新票重试。' },
+    { outcome: '验证码风控', code: '500', subject: '腾讯验证码风控', target: '当前请求', cause: '环境存在安全风险', note: '刷新页面或更换浏览器环境。' },
+    { outcome: '网络错误', code: '0 / network', subject: '插件/网络', target: '智谱', cause: '请求未到达服务端或连接超时', note: '检查网络后重试。' },
     { outcome: '错误', code: '其他 500', subject: '智谱/网络', target: '插件', cause: '未知服务端错误', note: '查看 raw serverMsg 并反馈。' },
   ];
 
@@ -29,32 +31,27 @@
       phase: 'Preload',
       title: '准备阶段',
       items: [
-        '用户在 sale time 前录入验证码 ticket，保存在当前 tab 的 sessionStorage。',
-        '在 Target Products 里最多选 3 个商品，顺序即优先级 P1 / P2 / P3。',
-        '选择 Mode、Burst Interval、Pay 后，配置写入 lib/settings/fire.ts。',
+        '录入验证码 ticket，写入当前 tab 的 sessionStorage（__bm_tickets），每张 300 秒有效，最新优先。',
+        'Target Products 最多选 3 个商品，顺序即优先级 P1 / P2 / P3。',
+        '06-stock-watch 预取 customerNumber（create-sign 需要），并从 T-90s 起轮询 batch-preview 估算时钟偏差、侦测 soldOut 翻转。',
       ],
     },
     {
       phase: 'Strike',
-      title: '发射阶段',
+      title: '开火阶段',
       items: [
-        '读取有效 tickets 和优先级列表。',
-        'buildStrikeQueue() 按优先级生成射击队列：1 个目标全给 P1；2 个目标按 P1, P1, P2, P1, P2…；3 个目标按 P1, P1, P2, P1, P3…。',
-        '把最新录入的 ticket 排在 shotIdx=0，确保首枪质量最高。',
-        '立即把这些 ticket 从票池扣除，防止重复发射。',
-        '按 burstIntervalMs 顺序单线程调用 /api/biz/pay/preview；连续 555 时自动 +200ms 退避，连续 soldout ≥3 时提前停止。',
-        '任意一枪返回 code=200 + bizId 时立即停止剩余 shot，并进入 Commit。',
-        '全部打光都没拿到 bizId，发送 BURST_FIRE_DEPLETED，UI 显示 depleted。',
+        'smart-fire-plan 状态机驱动：首发在服务器 T-0 前 10ms，或 batch-preview 侦测到翻转的瞬间，先到先得。',
+        '之后按 Strike Interval 串行补枪；555 / soldout 不核销票，下枪可复用同一张 ticket。',
+        '每场 preview 预算 8 发封顶；收到 HTTP 405（WAF）立即全局停火，避免 30-60 分钟封锁。',
       ],
     },
     {
       phase: 'Commit',
       title: '锁单 + 支付阶段',
       items: [
-        '调用 /api/biz/pay/create-sign，参数包括 productId / bizId / payType。',
-        '成功后通过 OPEN_PAYMENT_TAB 消息让 background.ts 用 chrome.tabs.create 打开支付链接，避免 popup blocker。',
-        '同时启动 pollPayCheck()，1.5s 间隔轮询 /api/biz/pay/check?bizId=，最多 5 分钟。',
-        '根据结果发送 STRIKE_PAYMENT_SUCCESS / EXPIRED / TIMEOUT，UI 和 Fire Matrix 同步更新。',
+        'preview 成功拿到 bizId → ALI：MAIN world 直接调 /api/biz/pay/create-sign，拿收银台 URL 用 chrome.tabs.create 新标签打开。',
+        'create-sign 失败或 WE_CHAT：回退到官方原生支付弹窗，扫码完成支付。',
+        '同时 pollPayCheck() 以 1.5s 间隔轮询 /api/biz/pay/check?bizId=，最多 5 分钟，同步支付成功 / 过期 / 超时状态。',
       ],
     },
   ];
@@ -66,52 +63,39 @@
       <span class="accent-bar" style="background: linear-gradient(180deg, var(--violet), var(--primary)); box-shadow: 0 0 14px rgba(99,102,241,0.35);"></span>
       <h3>使用说明</h3>
     </div>
-    <p class="section-note">Fire 面板三控件（Mode / Burst Interval / Pay）的含义，以及 Preload → Strike → Commit 的完整链路。</p>
+    <p class="section-note">开火由三种触发方式驱动，策略只有一个：低预算、串行、翻转优先。支付走 create-sign 直连（ALI）或原生二维码（WE_CHAT）。</p>
 
     <div class="usage-panel">
-      <!-- Mode -->
+      <!-- Trigger -->
       <div class="doc-hero">
         <span class="doc-badge">PART A</span>
-        <h4>Mode：决定“什么时候发射”</h4>
-        <p>底层：07-auto-fire.js 收到 FIRE_CONFIG 后，若 mode === 'manual' 会清空定时器并显示 Manual mode — auto disabled。</p>
+        <h4>三种触发方式</h4>
+        <p>无论哪种触发，进入的都是同一个 smart-fire-plan 状态机。</p>
       </div>
       <div class="usage-table-wrap">
         <table class="usage-table">
           <thead>
-            <tr><th>Mode</th><th>含义</th><th>行为</th></tr>
+            <tr><th>触发</th><th>含义</th><th>行为</th></tr>
           </thead>
           <tbody>
-            {#each MODE_ROWS as row}
+            {#each TRIGGER_ROWS as row}
               <tr><td class="u-name">{row.name}</td><td class="u-meaning">{row.meaning}</td><td class="u-desc">{row.behavior}</td></tr>
             {/each}
           </tbody>
         </table>
       </div>
 
-      <!-- Burst Interval -->
+      <!-- Strike Interval -->
       <div class="doc-hero doc-hero-secondary">
         <span class="doc-badge">PART B</span>
-        <h4>Burst Interval：决定“每枪间隔多久”</h4>
-        <p>智谱后端使用 2 秒滑动窗口限流（阈值=1）。2100ms 是实测单用户最优：比窗口大 100ms 的安全余量，0% 触发 555。</p>
-      </div>
-      <div class="usage-table-wrap">
-        <table class="usage-table">
-          <thead>
-            <tr><th>间隔</th><th>含义</th><th>适用场景</th></tr>
-          </thead>
-          <tbody>
-            <tr><td class="u-name">2100ms</td><td class="u-meaning">推荐默认</td><td class="u-desc">0% 555，单用户理论最优附近。</td></tr>
-            <tr><td class="u-name">≥2300ms</td><td class="u-meaning">保守</td><td class="u-desc">网络抖动大或 RTT 超过 250ms 时使用，进一步降低 555 概率。</td></tr>
-            <tr><td class="u-name">&lt;2000ms</td><td class="u-meaning">不推荐</td><td class="u-desc">会稳定触发 555，浪费 ticket。</td></tr>
-          </tbody>
-        </table>
+        <h4>Strike Interval：唯一节奏旋钮</h4>
+        <p>智谱 preview 端点为约 2 秒滑动窗口限流（阈值=1）：间隔 &lt;2s 必 555，≥2100ms 稳定 0% 555。下限已锁定 2100ms；网络抖动大或 RTT 偏高时建议 2300ms 以上。</p>
       </div>
 
       <!-- Flow -->
       <div class="doc-hero">
         <span class="doc-badge">PART C</span>
-        <h4>整个 Fire 模块怎么工作</h4>
-        <p>概括为三段式：Preload → Strike → Commit。</p>
+        <h4>完整链路：Preload → Strike → Commit</h4>
       </div>
       <div class="flow-list">
         {#each FLOW as step}
@@ -131,9 +115,8 @@
 
       <!-- UI fields -->
       <div class="doc-hero">
-        <span class="doc-badge">PART E</span>
+        <span class="doc-badge">PART D</span>
         <h4>UI 各字段含义</h4>
-        <p>Fire operations zone 中每个数字、按钮、状态分别代表什么。</p>
       </div>
       <div class="usage-table-wrap">
         <table class="usage-table">
@@ -150,9 +133,9 @@
 
       <!-- Error codes -->
       <div class="doc-hero doc-hero-secondary">
-        <span class="doc-badge">PART F</span>
+        <span class="doc-badge">PART E</span>
         <h4>Fire Matrix 结果与责任主体</h4>
-        <p>每个结果都标明【责任主体 --> 被调用方：原因】，方便你判断是插件问题、网络问题，还是智谱/腾讯侧服务繁忙。</p>
+        <p>每个结果都标明【责任主体 --&gt; 被调用方：原因】，方便判断是插件问题、网络问题，还是智谱/腾讯侧服务繁忙。</p>
       </div>
       <div class="usage-table-wrap">
         <table class="usage-table">
@@ -164,7 +147,7 @@
               <tr>
                 <td class="u-name">{row.outcome}</td>
                 <td class="u-meaning">{row.code}</td>
-                <td class="u-desc">【{row.subject} --> {row.target}：{row.cause}】</td>
+                <td class="u-desc">【{row.subject} --&gt; {row.target}：{row.cause}】</td>
                 <td class="u-desc">{row.note}</td>
               </tr>
             {/each}
@@ -173,7 +156,7 @@
       </div>
 
       <div class="usage-summary">
-        <strong>一句话总结：</strong>Mode 管“何时发”，Burst Interval 管“每枪隔多久”，Pay 决定支付方式。拿到第一个 bizId 后自动 create-sign 开支付页并轮询支付状态。
+        <strong>一句话总结：</strong>票管弹药（300s TTL，555/soldout 不核销），预算管安全（每场 ≤8 发、405 即停），翻转管时机（batch-preview 侦测 + 服务器时钟校准），create-sign 管支付（ALI 直连、WE_CHAT 二维码）。
       </div>
     </div>
   </section>

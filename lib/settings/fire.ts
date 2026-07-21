@@ -16,7 +16,7 @@ const STORAGE_KEY = 'local:fireConfig';
 
 function clampInterval(value: number, fallback: number): number {
   const n = Math.round(value);
-  if (!Number.isFinite(n) || n < 50) return fallback;
+  if (!Number.isFinite(n) || n < 2100) return fallback;
   return n;
 }
 

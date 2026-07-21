@@ -198,7 +198,7 @@
   function currentFireConfig(): FireConfig {
     return {
       ...(committedFireConfig ?? FIRE_CONFIG_DEFAULT),
-      burstIntervalMs: Math.max(50, Math.round(Number(burstIntervalMs)) || FIRE_CONFIG_DEFAULT.burstIntervalMs),
+      burstIntervalMs: Math.max(2100, Math.round(Number(burstIntervalMs)) || FIRE_CONFIG_DEFAULT.burstIntervalMs),
     };
   }
 
@@ -218,7 +218,7 @@
       await fireStore.set(config);
       committedFireConfig = { ...config };
       burstIntervalMs = config.burstIntervalMs;
-      fireSaveMessage = `已生效：Burst ${config.burstIntervalMs}ms`;
+      fireSaveMessage = `已生效：Strike ${config.burstIntervalMs}ms`;
     } finally {
       fireSaving = false;
     }
@@ -236,7 +236,7 @@
       <span class="accent-bar" style="background: var(--violet); box-shadow: 0 0 14px rgba(99,102,241,0.35);"></span>
       <h3>&#128293; 秒杀时间</h3>
     </div>
-    <p class="section-note">设置每日秒杀开始时间。Badge 和闹钟提醒将在此时间前 60/30/15/5 分钟触发；T-5 提醒触发时，saleout 探测同步停止，进入最晚自动 Fire 准备阶段。</p>
+    <p class="section-note">设置每日秒杀开始时间。Badge 与系统通知在 T-60/30/15/10/5 分钟触发；页面内的自动开火按服务器时钟在 T-0 前 10ms 触发。</p>
 
     {#if loaded}
       <div class="sale-time-form">
@@ -325,7 +325,7 @@
       <span class="accent-bar" style="background: var(--amber); box-shadow: 0 0 14px rgba(217,119,6,0.35);"></span>
       <h3>&#127915; 验证码录入</h3>
     </div>
-    <p class="section-note">设置验证码池的最大容量，同时也等于一次 Batch 录入的上限。达到上限后自动停止；票池越满，秒杀命中概率越高。</p>
+    <p class="section-note">设置验证码池上限（也是一轮 Batch 录入的上限），达到上限自动停止。每张票有效期 300 秒，过期自动清理；开售前 5 分钟内录入最有效。</p>
 
     {#if loaded}
       <div class="sale-time-form">
@@ -371,14 +371,14 @@
       <span class="accent-bar" style="background: var(--rose); box-shadow: 0 0 14px rgba(225,29,72,0.35);"></span>
       <h3>&#128293; Fire 发射参数</h3>
     </div>
-    <p class="section-note">控制 Burst 阶段的发射节奏。智谱后端使用 2 秒滑动窗口限流（阈值=1），低于 2 秒会触发大量 555；实测 2100ms 是单用户最优节奏。</p>
+    <p class="section-note">控制串行发射的最小间隔。智谱 preview 端点为约 2 秒滑动窗口限流（阈值=1），低于 2 秒必触发 555；下限锁定 2100ms，默认 2100ms，网络抖动大可调到 2300ms 以上。</p>
 
     {#if loaded}
       <div class="sale-time-form">
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label" for="fire-burst-interval">Burst 单发间隔（ms）</label>
-            <input id="fire-burst-interval" type="number" class="form-select form-input-num" min="500" max="10000" step="100" bind:value={burstIntervalMs} />
+            <label class="form-label" for="fire-burst-interval">Strike 单发间隔（ms）</label>
+            <input id="fire-burst-interval" type="number" class="form-select form-input-num" min="2100" max="10000" step="100" bind:value={burstIntervalMs} />
           </div>
           <div class="form-group" style="flex: 2;">
             <div class="next-sale-preview" style="margin-top: 0;">

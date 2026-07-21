@@ -74,7 +74,6 @@ function syncSelectionStatus() {
   var tag = document.getElementById('_prodTag');
   var sel = document.getElementById('_prodSel');
   var fb = document.getElementById('_fb');
-  var fbb = document.getElementById('_fbb');
   var ammo = document.getElementById('_ammo');
   var cp = document.getElementById('_cpd');
   var cpb = document.getElementById('_cpb');
@@ -104,10 +103,6 @@ function syncSelectionStatus() {
   if (fb) {
     fb.disabled = summary.launchable === 0;
     fb.innerHTML = '&#9889; FIRE 串行 (' + summary.tickets + ')';
-  }
-  if (fbb) {
-    fbb.disabled = summary.launchable === 0;
-    fbb.innerHTML = '&#9889; BURST 并发 (' + summary.tickets + ') · 200ms';
   }
   if (ammo) {
     if (summary.selected === 0) {
@@ -398,9 +393,9 @@ function loadProducts(force) {
     if (abortController.signal.aborted) return;
     _productLoadStatus.attempt = attempt;
     // Use the current window.fetch (which includes any Sentry instrumentation
-    // the page has installed) instead of the raw native fetch. The page's own
-    // batch-preview calls go through this path and succeed; bypassing it with
-    // __bm_originalFetch triggers WAF/rate-limit 555.
+    // the page has installed) instead of a saved raw native fetch. The page's
+    // own batch-preview calls go through this path and succeed; bypassing it
+    // with an uninstrumented fetch triggers WAF/rate-limit 555.
     // Match the page's own request headers as closely as possible to avoid
     // WAF/rate-limit fingerprints that distinguish extension-initiated calls.
     var doFetch = window.fetch;
@@ -465,11 +460,6 @@ function loadProducts(force) {
   }
 
   setTimeout(function() { tryFetch(1); }, BACKOFF_MS[0]);
-}
-
-// Kept for backward compatibility; new code should call loadProducts().
-function fetchBatchPreview() {
-  loadProducts();
 }
 
 function renderProductsAuthError() {

@@ -1,11 +1,10 @@
 import { storage } from '#imports';
-import type { IObservableStore } from '../../types';
 
 /**
  * Chrome-storage-backed observable store for popup, content scripts and background.
  * Keeps a synchronous in-memory cache so get() is non-blocking.
  */
-export class ChromeStorageStore<T> implements IObservableStore<T> {
+export class ChromeStorageStore<T> {
   protected value: T | null = null;
   private readonly listeners = new Set<(value: T | null) => void>();
   private initialized = false;

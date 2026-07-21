@@ -1,19 +1,13 @@
 // Background Service Worker — handles R4 Badge + R1 Alarms
 // IMPORTANT: chrome.alarms.onAlarm listener MUST be registered at top level (not async)
 
-import { storage } from '#imports';
 import {
   SALE_ALARM_MINUTES,
   createSaleAlarmStatusSnapshot,
   getNextSaleTime,
   saleTimeStore,
 } from '../lib/settings/sale-time';
-
-interface AuthHeaders {
-  authorization: string;
-  bigmodelOrganization: string;
-  bigmodelProject: string;
-}
+import { refreshUsageCache } from '../lib/usage/providers';
 
 const BADGE_STYLES: Record<number, { text: string; color: string; desc: string }> = {
   60: { text: '60', color: '#0ea5e9', desc: '距秒杀 60 分钟' },
@@ -313,7 +307,7 @@ export default defineBackground(() => {
   // directly because Alibaba WAF blocks extension-origin requests to that
   // endpoint. This proxy remains available for other platform endpoints.
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
-    if (msg.type === 'BIGMODEL_REQUEST' || msg.type === 'VOLCENGINE_REQUEST') {
+    if (msg.type === 'BIGMODEL_REQUEST') {
       (async () => {
         const { url, method, headers, body } = msg.payload;
         // Enforce the no-batch-preview-from-extension rule here as a safety net.
@@ -360,6 +354,60 @@ export default defineBackground(() => {
       return true;
     }
 
+    if (msg.type === 'ALI_PURCHASE_SUCCESS') {
+      (async () => {
+        const { orderId, productName, plan } = msg;
+        await chrome.action.setBadgeText({ text: 'OK' });
+        await chrome.action.setBadgeBackgroundColor({ color: '#10b981' });
+        await chrome.action.setTitle({
+          title:
+            (plan || '阿里百炼') +
+            ' 抢购成功' +
+            (orderId ? ' · 订单 ' + orderId : '') +
+            (productName ? ' · ' + productName : ''),
+        });
+        // OK badge is a transient success indicator; clear it after the payment window.
+        await chrome.alarms.clear('badge-ok-clear');
+        await chrome.alarms.create('badge-ok-clear', { when: Date.now() + OK_BADGE_TTL_MS });
+        sendResponse({ ok: true });
+      })().catch((err) => {
+        sendResponse({ ok: false, error: err?.message || String(err) });
+      });
+      return true;
+    }
+
+    if (msg.type === 'BCE_PURCHASE_SUCCESS') {
+      (async () => {
+        const { orderId, productName, plan } = msg;
+        await chrome.action.setBadgeText({ text: 'OK' });
+        await chrome.action.setBadgeBackgroundColor({ color: '#10b981' });
+        await chrome.action.setTitle({
+          title:
+            (plan || '百度千帆') +
+            ' 抢购成功' +
+            (orderId ? ' · 订单 ' + orderId : '') +
+            (productName ? ' · ' + productName : ''),
+        });
+        // OK badge is a transient success indicator; clear it after the payment window.
+        await chrome.alarms.clear('badge-ok-clear');
+        await chrome.alarms.create('badge-ok-clear', { when: Date.now() + OK_BADGE_TTL_MS });
+        sendResponse({ ok: true });
+      })().catch((err) => {
+        sendResponse({ ok: false, error: err?.message || String(err) });
+      });
+      return true;
+    }
+
+    if (msg.type === 'USAGE_FETCH') {
+      (async () => {
+        const cache = await refreshUsageCache();
+        sendResponse({ ok: true, cache });
+      })().catch((err) => {
+        sendResponse({ ok: false, error: err?.message || String(err) });
+      });
+      return true;
+    }
+
     if (msg.type === 'SALE_TIME_UPDATED') {
       saleTimeStore.set(msg.config)
         .then(() => rescheduleSaleAlarms('manual-confirm'))
@@ -375,6 +423,12 @@ export default defineBackground(() => {
     if (msg.type === 'OPEN_OPTIONS_PAGE') {
       chrome.runtime.openOptionsPage();
       sendResponse({ ok: true });
+      return true;
+    }
+    if (msg.type === 'OPEN_PAY_TAB') {
+      chrome.tabs.create({ url: msg.url })
+        .then(() => sendResponse({ ok: true }))
+        .catch((err) => sendResponse({ ok: false, error: err?.message || String(err) }));
       return true;
     }
   });

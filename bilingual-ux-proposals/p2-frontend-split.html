@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>方案二 · 渲染层切句对齐</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="./index.html">← 返回总览</a>
+
+  <header class="hero">
+    <span class="kicker">方案二（快速验证 / 过渡）</span>
+    <h1>渲染层切句对齐：不动管线，前端自己拆</h1>
+    <p>底层逻辑：<strong>把对齐问题后移到渲染层</strong>。现有段级 content_html / content_html_zh 不变，reader 在浏览器里把英文段切成句、中文段切成句，按顺序（必要时按比例）配对。今天就能上线看到句级效果。</p>
+  </header>
+
+  <div class="card">
+    <h3>工作方式</h3>
+    <div class="flow">reader 拿到段对（现有 pairs）
+  → 英文段：DOM 走文本节点，按 [.!?] 边界切成句子 span（保留内联标记）
+  → 中文段：按 [。！？] 切句
+  → 对齐：数量相等→按序配对；不等→按位置比例配（第 i/n 句对第 j/m 句）
+  → 逐句交替渲染</div>
+  </div>
+
+  <div class="card">
+    <h3>成本</h3>
+    <span class="tag free">零管线改动</span>
+    <ul class="dots">
+      <li>只动 reader 一个文件（~80 行切句 + 配对逻辑），契约、管线、缓存全不动。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>优点</h3>
+    <ul class="dots">
+      <li>最快验证句级交互是否符合预期；</li>
+      <li>零数据迁移，失败可秒回退。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>局限（必须正视）</h3>
+    <ul class="dots">
+      <li><b>对齐是猜的</b>：英文 3 句翻成中文 2 句是常态，按比例配对在这些段落必然错位——读者看到的"对照"可能是错的，这比没有对照更糟；</li>
+      <li>错位不会报错，会悄悄降低信任度；</li>
+      <li>长期看，这个方案的"便宜"是透支数据正确性换来的。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>适合谁</h3>
+    <ul class="dots">
+      <li>想今天先看到句级长什么样、验证交互值不值得做管线改造的过渡场景。验证完请切回方案一，不要长期依赖。</li>
+    </ul>
+  </div>
+
+  <footer>方案二 · 最快的路，也是最脆的路</footer>
+</div>
+</body>
+</html>

@@ -1,7 +1,7 @@
 {
   "name": "miaosha-GLM",
-  "version": "1.4.2",
-  "description": "智谱 Coding Plan 秒杀助手浏览器扩展",
+  "version": "2.0.0",
+  "description": "智能 Coding Plan 助手浏览器扩展（多平台秒杀 / 买家秀 / AI 新闻 / Token 用量）",
   "scripts": {
     "dev": "wxt",
     "build:overlay": "node scripts/build-overlay.js",

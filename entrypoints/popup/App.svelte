@@ -1,20 +1,24 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { devEnvironment, type DevMode } from '../../lib/settings/dev';
+  import { DEFAULT_TAB, type PopupTab } from './tabs';
   import Topbar from './components/Topbar.svelte';
   import Footer from './components/Footer.svelte';
-  import DevContent from './components/DevContent.svelte';
+  import NewsContent from './components/news/NewsContent.svelte';
   import PlatformEntryGrid from './components/PlatformEntryGrid.svelte';
+  import UsageView from './components/UsageView.svelte';
+  import PlaceholderPanel from './components/PlaceholderPanel.svelte';
 
-  let mode = $state<DevMode>('development');
-  let loaded = $state(false);
+  // 单一激活 tab：header 与 footer 的全部面板互斥，点击即切换。
+  // 每次打开 popup 默认显示 Token 用量。
+  let tab = $state<PopupTab>(DEFAULT_TAB);
 
-  $effect(() => {
-    devEnvironment.get().then((value) => {
-      mode = value;
-      loaded = true;
-    });
-  });
+  // 买家秀面板：内嵌 any-comments vendored popup（public/buyer-show/）。
+  // 设计稿 420×580，按面板可用空间等比缩小并居中（超出部分对称裁剪）。
+  let frameW = $state(0);
+  let frameH = $state(0);
+  const buyerScale = $derived(
+    frameW > 0 && frameH > 0 ? Math.min(frameW / 420, frameH / 580, 1) : 1,
+  );
 
   onMount(() => {
     // Acknowledge a transient purchase-success or countdown badge when the user
@@ -27,29 +31,33 @@
       }
     });
   });
-
-  function handleModeChange(newMode: DevMode) {
-    mode = newMode;
-    devEnvironment.set(newMode);
-  }
 </script>
 
 <div class="shell">
-  <Topbar {mode} onmodechange={handleModeChange} />
+  <Topbar {tab} ontabchange={(t) => (tab = t)} />
 
-  {#if loaded}
-    {#if mode === 'development'}
-      <DevContent />
-    {:else}
-      <PlatformEntryGrid />
-    {/if}
-  {:else}
-    <div class="loading">
-      <div class="loading-spinner"></div>
+  {#if tab === 'news'}
+    <NewsContent />
+  {:else if tab === 'usage'}
+    <UsageView />
+  {:else if tab === 'seckill'}
+    <PlatformEntryGrid />
+  {:else if tab === 'buyer-show'}
+    <div class="buyer-show-frame" bind:clientWidth={frameW} bind:clientHeight={frameH}>
+      <iframe
+        src="/buyer-show/popup.html"
+        title="买家秀 · Coding Plan 吐槽大会"
+        style:transform="scale({buyerScale})"
+      ></iframe>
     </div>
+  {:else}
+    <PlaceholderPanel
+      title="拼团转让交易"
+      description="加群拼团套餐 · 转让 / 交易闲置套餐"
+    />
   {/if}
 
-  <Footer />
+  <Footer {tab} ontabchange={(t) => (tab = t)} />
 </div>
 
 <style>
@@ -80,24 +88,21 @@
     background: #ffffff;
   }
 
-  .loading {
+  .buyer-show-frame {
     flex: 1;
-    display: grid;
-    place-items: center;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: #ffffff;
   }
 
-  .loading-spinner {
-    width: 22px;
-    height: 22px;
-    border: 2px solid #0c1224;
-    border-top-color: transparent;
-    border-radius: 50%;
-    animation: spin 0.7s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
+  .buyer-show-frame iframe {
+    flex: none;
+    width: 420px;
+    height: 580px;
+    border: 0;
+    transform-origin: center center;
   }
 </style>

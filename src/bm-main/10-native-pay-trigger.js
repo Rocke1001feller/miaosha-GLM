@@ -297,8 +297,64 @@
     if (msg.type !== 'BURST_FIRE_SUCCESS') return;
     var ps = msg.data;
     if (!ps || !ps.bizId) return;
-    openNativePaymentDialog(ps);
+
+    if (ps.payType === 'ALI' && window.__bm_customerInfo && window.__bm_customerInfo.customerNumber) {
+      directCreateSign(ps);
+    } else {
+      openNativePaymentDialog(ps);
+    }
   });
+
+  function directCreateSign(ps) {
+    var auth = (typeof getLocalAuthHeaders === 'function') ? getLocalAuthHeaders() : null;
+    if (!auth) {
+      openNativePaymentDialog(ps);
+      return;
+    }
+    var ic = null;
+    try {
+      ic = new URLSearchParams(window.location.search).get('ic');
+    } catch (e) {}
+    var body = {
+      payType: 'ALI',
+      productId: ps.productId,
+      customerId: window.__bm_customerInfo.customerNumber,
+      bizId: ps.bizId,
+    };
+    if (ic) body.invitationCode = ic;
+
+    fetch('https://bigmodel.cn/api/biz/pay/create-sign', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'authorization': auth.authorization,
+        'bigmodel-organization': auth.bigmodelOrganization,
+        'bigmodel-project': auth.bigmodelProject,
+        'Content-Type': 'application/json;charset=utf-8',
+        'accept': 'application/json, text/plain, */*',
+      },
+      body: JSON.stringify(body),
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d && d.code === 200 && d.data && d.data.sign) {
+        try {
+          window.postMessage({ __miaosha_overlay: true, type: 'PAYMENT_CREATED', data: { bizId: ps.bizId, orderId: d.data.orderId, payType: 'ALI' } }, '*');
+        } catch (e) {}
+        try {
+          chrome.runtime.sendMessage({ type: 'OPEN_PAY_TAB', url: d.data.sign });
+        } catch (e) {
+          // Fallback if runtime message fails.
+          window.location.href = d.data.sign;
+        }
+      } else {
+        openNativePaymentDialog(ps);
+      }
+    })
+    .catch(function() {
+      openNativePaymentDialog(ps);
+    });
+  }
 
   // Listen for the explicit test command from the L1 header button.
   window.addEventListener('message', function (e) {

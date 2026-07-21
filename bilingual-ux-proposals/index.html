@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>双语阅读体验进阶 · 方案脑暴</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <span class="kicker">脑暴 · 双语阅读体验的「锚定粒度」</span>
+    <h1>从「段对段」到「句对句」</h1>
+    <p>现状：双语已实现块级上下对照（英文段落下接中文段落）。反馈：块一长，读完英文长段再读中文长段，
+    <strong>句与句的关联彻底丢失</strong>。目标：找到最好的双语对照体验，同时保持项目的简洁优雅。</p>
+  </header>
+
+  <h2 class="sec">一、问题的本质：不是翻译问题，是「锚定」问题</h2>
+
+  <div class="card">
+    <h3>本质 1：双语的可用性 = 锚定成本</h3>
+    <p style="font-size:13.5px">
+      读者读双语时，大脑一直在做一件事：<b>把这句中文和它的英文原句对上号</b>。对上的成本越低，体验越好。
+      锚定成本由<strong>对照粒度</strong>决定：篇对篇 ≫ 段对段 ≫ 句对句 ≫ 行内同句。
+      当前实现停在「段」，而新闻段落动辄 5–8 行，段内多句，关联就在段内丢了——这就是你体验的断点。
+    </p>
+  </div>
+
+  <div class="card">
+    <h3>本质 2：粒度是一条光谱，不是一个点</h3>
+    <p style="font-size:13.5px">
+      粒度越细，锚定越强，但排版噪声越大、阅读越被打断。而且不同的人要的不一样：
+      学英文的人要句级对照；只想获取信息的人要中文流畅、英文只作"锚点备用"。
+      <strong>所以最优雅的答案不是替用户选一个粒度，而是把粒度做成可切换的视图</strong>——句/段/单语，一键切换。
+    </p>
+  </div>
+
+  <div class="card">
+    <h3>本质 3：对齐正确性必须在数据源头保证</h3>
+    <p style="font-size:13.5px">
+      句级对照的难点不在渲染，在<b>对齐</b>：英文 3 句翻成中文可能是 2 句，靠前端切句再配对，错位是常态。
+      唯一可靠的做法是<strong>让「句」成为管线的翻译与存储单位</strong>——按句翻译、按句存对，
+      渲染层不做任何对齐猜测。这恰好也符合我们一贯的原则：把运行时问题变成构建时问题。
+    </p>
+  </div>
+
+  <h2 class="sec">二、层级与维度</h2>
+  <table class="t">
+    <thead><tr><th>层级</th><th>能做什么</th><th>对应方案</th></tr></thead>
+    <tbody>
+      <tr><th>数据层</th><td>翻译单位从段降为句，契约存句对</td><td>方案一</td></tr>
+      <tr><th>渲染层</th><td>不动契约，前端切句+启发式对齐</td><td>方案二</td></tr>
+      <tr><th>布局层</th><td>左右双栏同步滚动</td><td>方案三</td></tr>
+      <tr><th>交互层</th><td>点按揭示、粒度切换、焦点跟随</td><td>方案四 / 五</td></tr>
+      <tr><th>质量层</th><td>术语保留英文做词汇锚点</td><td>方案五（内建）</td></tr>
+    </tbody>
+  </table>
+
+  <h2 class="sec">三、五个方案</h2>
+  <table class="t">
+    <thead>
+      <tr><th style="width:34px">#</th><th>方案</th><th>底层逻辑</th><th>锚定强度</th><th>改动量</th><th>主要风险</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>一</td><td><a href="./p1-sentence-pipeline.html">句级翻译契约（管线按句翻译）</a></td><td>句成为翻译与存储单位，对齐在源头 100% 正确</td><td>★★★★★</td><td>管线+契约+UI</td><td>请求数 ×3（缓存对冲）；句切分边界</td></tr>
+      <tr><td>二</td><td><a href="./p2-frontend-split.html">渲染层切句对齐（不动管线）</a></td><td>前端把段切成句，按序/按比例启发式配对</td><td>★★★★</td><td>仅前端</td><td>句数不匹配时错位（约 10–20% 段落）</td></tr>
+      <tr><td>三</td><td><a href="./p3-dual-column.html">左右双栏同步滚动</a></td><td>不拆结构，空间并列+滚动同步建立关联</td><td>★★★</td><td>仅前端</td><td>窄屏/移动/打印不友好；长文定位仍靠找</td></tr>
+      <tr><td>四</td><td><a href="./p4-progressive-reveal.html">点按揭示式（默认单语，点哪句翻哪句）</a></td><td>关联变成显式动作，只有疑惑时才锚定</td><td>★★★★（按需）</td><td>仅前端</td><td>与"默认双语"预期相悖；要多点一下</td></tr>
+      <tr><td>五</td><td><a href="./p5-granularity-mixer.html">粒度可伸缩混合（句/段切换 + 术语锚点）</a></td><td>粒度做成视图开关，术语保留英文作词汇锚</td><td>★★★★★</td><td>依赖一或二</td><td>编排复杂度，需建立在一句级数据之上</td></tr>
+    </tbody>
+  </table>
+
+  <div class="verdict">
+    <h2>最终实施建议</h2>
+    <ol>
+      <li><strong>主线：方案一（句级翻译契约）。</strong>管线把翻译单位从段降为句（英文分句用正则即可），快照存 <code>blocks: [{html_en, sentences: [{en, zh}]}]</code>；reader 句级交替渲染（英文原句→灰色中文句），对齐在源头保证，渲染零猜测。缓存键改为句级，新增请求约 ×3，但缓存永续复用，且已有段级缓存命中的内容可整段跳过。</li>
+      <li><strong>交互：顺手落实方案五的粒度开关。</strong>顶栏从「双语/中文/EN」扩为「双语·句 / 双语·段 / 中文 / EN」——句级数据同时能组装出段级视图，零额外成本。</li>
+      <li><strong>方案二作过渡验证（可选）。</strong>若你想今天就看到句级效果而暂不动管线，可用前端切句快速验证交互；但<strong>不要长期依赖</strong>——启发式对齐的错误会悄悄累积。</li>
+      <li><strong>方案三/四不入主线。</strong>左右双栏对窄屏和打印不友好；点按揭示与"打开即双语"的预期相悖。两者都可作为日后阅读页的实验性视图，但不值得现在付复杂度。</li>
+    </ol>
+    <p><strong>简洁优雅如何保持：</strong>新概念全部落在已有层——句级翻译仍在 snapshot 步骤内（替换的是 fulltext 的遍历单位）；快照契约从"HTML 镜像"演进为"句对数组"；reader 从"对齐渲染"简化为"按契约渲染"。管线缓存、预算、降级策略全部原样复用。</p>
+  </div>
+
+  <footer>双语阅读体验脑暴 · 2026-07-19 · 所有页面完全离线可预览</footer>
+
+</div>
+</body>
+</html>

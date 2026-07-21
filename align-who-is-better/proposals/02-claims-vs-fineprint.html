@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>方案二 · 营销-文档对撞台 — AI 编程套餐横评</title>
+<style>
+  :root{
+    --paper:#faf7f2;
+    --ink:#23211d;
+    --ink-soft:#6b665c;
+    --line:#e4ddd1;
+    /* 营销侧：暖色系 */
+    --mk-bg:#fdeee6;
+    --mk-bg-deep:#fbdcc8;
+    --mk-ink:#8a3413;
+    --mk-accent:#d1541e;
+    --mk-tag:#c2400f;
+    /* 文档侧：冷色系 */
+    --fp-bg:#e9f3ee;
+    --fp-bg-deep:#d2e8dc;
+    --fp-ink:#14532d;
+    --fp-accent:#177a46;
+    --fp-tag:#0f6b3c;
+    --bolt:#f5b301;
+    --card:#ffffff;
+    --radius:14px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",sans-serif;
+    line-height:1.7;
+    font-size:15px;
+  }
+  .wrap{max-width:1150px;margin:0 auto;padding:36px 28px 64px}
+
+  /* ── 顶部方案横幅 ── */
+  .banner{
+    border:2px solid var(--ink);
+    border-radius:18px;
+    padding:26px 30px 24px;
+    background:
+      radial-gradient(circle at 92% 8%, rgba(245,179,1,.14), transparent 40%),
+      var(--card);
+    box-shadow:6px 6px 0 rgba(35,33,29,.08);
+  }
+  .banner .scheme{
+    display:inline-block;font-size:12px;letter-spacing:.18em;
+    border:1.5px solid var(--ink);border-radius:999px;
+    padding:3px 14px;font-weight:700;background:var(--bolt);color:#3d2c00;
+  }
+  .banner h1{font-size:30px;margin:12px 0 8px;letter-spacing:.01em}
+  .banner h1 .vs-mark{color:var(--mk-accent)}
+  .banner .logic{font-size:16px;color:var(--ink-soft)}
+  .banner .logic strong{color:var(--ink)}
+
+  /* ── (a) 方法说明卡 ── */
+  .method{
+    margin-top:34px;
+    background:var(--card);
+    border:1.5px solid var(--line);
+    border-radius:var(--radius);
+    padding:26px 28px;
+  }
+  .method h2{font-size:19px;margin-bottom:6px}
+  .method p.desc{color:var(--ink-soft);font-size:14px;margin-bottom:18px}
+  .duel{
+    display:grid;grid-template-columns:1fr 84px 1fr;gap:0;align-items:stretch;
+  }
+  .duel .side{
+    border-radius:12px;padding:18px 20px;position:relative;
+  }
+  .side.mk{background:var(--mk-bg);border:1.5px solid var(--mk-bg-deep)}
+  .side.fp{background:var(--fp-bg);border:1.5px solid var(--fp-bg-deep)}
+  .side .side-tag{
+    display:inline-block;font-size:12px;font-weight:700;border-radius:6px;
+    padding:2px 10px;margin-bottom:8px;color:#fff;
+  }
+  .side.mk .side-tag{background:var(--mk-tag)}
+  .side.fp .side-tag{background:var(--fp-tag)}
+  .side .quote{font-size:15px;font-weight:600;line-height:1.65}
+  .side.mk .quote{color:var(--mk-ink)}
+  .side.fp .quote{color:var(--fp-ink)}
+  .side .note{font-size:12.5px;margin-top:8px;color:var(--ink-soft)}
+  .bolt{
+    display:flex;align-items:center;justify-content:center;position:relative;
+  }
+  .bolt::before{
+    content:"";position:absolute;top:0;bottom:0;left:50%;width:0;
+    border-left:2px dashed #d8cfbd;
+  }
+  .bolt .badge{
+    position:relative;z-index:1;width:52px;height:52px;border-radius:50%;
+    background:var(--ink);color:var(--bolt);
+    display:flex;align-items:center;justify-content:center;
+    font-size:22px;font-weight:900;
+    box-shadow:0 3px 0 rgba(35,33,29,.25);
+    flex:none;
+  }
+  .bolt .badge.vs{font-size:15px;letter-spacing:.02em}
+  .legend{
+    margin-top:16px;display:flex;gap:22px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-soft);
+  }
+  .legend .chip{display:inline-flex;align-items:center;gap:6px}
+  .legend .dot{width:10px;height:10px;border-radius:3px;display:inline-block}
+  .legend .dot.mk{background:var(--mk-accent)}
+  .legend .dot.fp{background:var(--fp-accent)}
+
+  /* ── 厂商档案 ── */
+  .vendor{
+    margin-top:44px;
+    background:var(--card);
+    border:1.5px solid var(--line);
+    border-radius:18px;
+    overflow:hidden;
+  }
+  .vendor-head{
+    padding:22px 28px 18px;
+    border-bottom:1.5px solid var(--line);
+    display:flex;align-items:flex-start;gap:18px;flex-wrap:wrap;
+    background:linear-gradient(180deg,#fffdf9,#fff);
+  }
+  .vendor-head .no{
+    font-size:13px;font-weight:800;color:#fff;background:var(--ink);
+    width:34px;height:34px;border-radius:9px;
+    display:flex;align-items:center;justify-content:center;flex:none;margin-top:2px;
+  }
+  .vendor-head .who{flex:1;min-width:240px}
+  .vendor-head h3{font-size:21px}
+  .vendor-head h3 small{font-size:14px;color:var(--ink-soft);font-weight:500;margin-left:8px}
+  .vendor-head .links{font-size:12.5px;margin-top:4px;color:var(--ink-soft)}
+  .vendor-head .links a{color:#3f63c9;text-decoration:none;border-bottom:1px dotted #3f63c9}
+  .vendor-head .links a:hover{text-decoration:underline}
+
+  .collision{padding:8px 28px 22px}
+  .col-head{
+    display:grid;grid-template-columns:1fr 84px 1fr;
+    font-size:12px;font-weight:700;letter-spacing:.14em;color:var(--ink-soft);
+    padding:14px 4px 8px;
+  }
+  .col-head .l{color:var(--mk-tag)}
+  .col-head .r{color:var(--fp-tag);text-align:right}
+  .col-head .c{text-align:center}
+  .clash-row{
+    display:grid;grid-template-columns:1fr 84px 1fr;align-items:stretch;
+    margin-bottom:10px;
+  }
+  .clash{
+    border-radius:10px;padding:13px 16px 11px;font-size:14px;line-height:1.65;
+    display:flex;flex-direction:column;gap:8px;justify-content:space-between;
+  }
+  .clash.mk{background:var(--mk-bg);border:1px solid var(--mk-bg-deep);border-left:4px solid var(--mk-accent)}
+  .clash.fp{background:var(--fp-bg);border:1px solid var(--fp-bg-deep);border-right:4px solid var(--fp-accent)}
+  .clash.empty{background:transparent;border:1px dashed var(--line);color:#b7b0a2;
+    align-items:center;justify-content:center;font-size:12.5px;font-style:italic}
+  .clash .text{font-weight:550}
+  .clash.mk .text{color:var(--mk-ink)}
+  .clash.fp .text{color:var(--fp-ink)}
+  .src{
+    align-self:flex-start;font-size:11px;font-weight:700;border-radius:5px;
+    padding:1px 8px;letter-spacing:.05em;white-space:nowrap;
+  }
+  .src.mkmk{background:var(--mk-tag);color:#fff}
+  .src.fpfp{background:var(--fp-tag);color:#fff}
+  .src.mix{background:#5b5bd6;color:#fff}
+  .src.third{background:#8a6d00;color:#fff}
+
+  /* ── 折算口径条 ── */
+  .calc-note{
+    margin:6px 28px 20px;
+    border:1px solid #e8dcc0;background:#fff9e9;border-radius:10px;
+    padding:12px 16px;font-size:13px;color:#6d5a1e;
+  }
+  .calc-note .tag{
+    display:inline-block;background:#8a6d00;color:#fff;font-size:11px;font-weight:700;
+    border-radius:5px;padding:1px 8px;margin-right:8px;letter-spacing:.05em;
+  }
+  .calc-note .assume{color:#93762a;font-size:12.5px}
+
+  /* ── 水分指数仪表 ── */
+  .gauge-block{
+    margin:0 28px 26px;
+    border:1.5px solid var(--line);border-radius:12px;
+    background:#fffdf8;padding:18px 22px;
+  }
+  .gauge-top{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+  .gauge-title{font-size:15px;font-weight:800;flex:none}
+  .gauge-title small{display:block;font-size:11.5px;font-weight:500;color:var(--ink-soft);margin-top:2px}
+  .gauge-meter{display:flex;align-items:center;gap:14px;flex:1;min-width:280px}
+  .segs{display:flex;gap:5px;flex:1}
+  .segs .seg{height:16px;flex:1;border-radius:4px;background:#efe9dd;border:1px solid var(--line)}
+  .segs .seg.on-3{background:#e8a33d;border-color:#cf8a26}
+  .segs .seg.on-4{background:#dd6b1e;border-color:#c0560f}
+  .segs .seg.on-5{background:#b3261e;border-color:#971b14}
+  .level{
+    font-size:14px;font-weight:900;white-space:nowrap;
+    padding:3px 12px;border-radius:999px;color:#fff;
+  }
+  .level.lv3{background:#e8a33d}
+  .level.lv4{background:#dd6b1e}
+  .level.lv5{background:#b3261e}
+  .level small{font-weight:600;font-size:11.5px;opacity:.92;margin-left:6px}
+  .gauge-basis{
+    margin-top:14px;border-top:1px dashed var(--line);padding-top:12px;
+  }
+  .gauge-basis .basis-title{font-size:12px;font-weight:700;color:var(--ink-soft);letter-spacing:.1em;margin-bottom:8px}
+  .basis-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px}
+  .basis-item{
+    background:#fdf3ee;border:1px solid #f3ddcf;border-radius:8px;
+    padding:9px 12px;font-size:12.5px;line-height:1.55;color:#5c4a3d;
+  }
+  .basis-item .glabel{
+    font-weight:800;color:#a03412;margin-right:6px;
+  }
+  .basis-item .sev{
+    float:right;font-size:10.5px;font-weight:700;border-radius:4px;padding:0 6px;
+    margin-left:6px;margin-top:1px;
+  }
+  .sev.s-high{background:#b3261e;color:#fff}
+  .sev.s-mid{background:#e8a33d;color:#fff}
+  .sev.s-low{background:#8fae9c;color:#fff}
+
+  /* ── 底部设计逻辑 ── */
+  .footer-sec{
+    margin-top:48px;
+    border:2px solid var(--ink);border-radius:18px;background:var(--card);
+    padding:28px 30px;
+  }
+  .footer-sec h2{font-size:20px;margin-bottom:16px}
+  .three-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .fcol{border:1px solid var(--line);border-radius:10px;padding:16px 18px;background:#fffdf9}
+  .fcol h4{font-size:14px;margin-bottom:8px}
+  .fcol h4 .ico{margin-right:6px}
+  .fcol p{font-size:13px;color:var(--ink-soft);line-height:1.7}
+  .snapshot{
+    margin-top:22px;border-top:1.5px dashed var(--line);padding-top:16px;
+    font-size:12.5px;color:var(--ink-soft);line-height:1.8;
+  }
+  .snapshot strong{color:var(--ink)}
+  .no-data{padding:60px 20px;text-align:center;color:#b3261e;font-size:15px}
+
+  @media (max-width:860px){
+    .duel,.clash-row,.col-head{grid-template-columns:1fr}
+    .bolt{padding:6px 0}
+    .bolt::before{border-left:none;border-top:2px dashed #d8cfbd;left:0;right:0;top:50%;width:auto;height:0;bottom:auto}
+    .col-head .c,.col-head .r{text-align:left}
+    .col-head{display:none}
+    .three-cols{grid-template-columns:1fr}
+    .banner h1{font-size:24px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- 顶部方案横幅 -->
+  <header class="banner">
+    <span class="scheme">方案 02</span>
+    <h1>营销-文档对撞台 <span class="vs-mark">Claims ⚡ Fineprint</span></h1>
+    <p class="logic"><strong>底层逻辑：</strong>文本级并置证伪 —— 不折算、不打分，把每家营销页原话与文档页条款左右对撞，让话术在自家条款面前自行露出水分。</p>
+  </header>
+
+  <div id="app"></div>
+
+  <!-- 底部：设计逻辑与取舍 -->
+  <section class="footer-sec">
+    <h2>本方案设计逻辑与取舍</h2>
+    <div class="three-cols">
+      <div class="fcol">
+        <h4><span class="ico">🎯</span>为什么选这个维度</h4>
+        <p>营销话术与文档条款本就分属两个页面、两种语气、两套受众。横向折算（方案一）回答"值多少"，而对撞台回答"谁在说漂亮话"——文本级并置是证伪成本最低的方式：不需要统一计量单位，只需把同一厂商自己写的两句话摆在一起，落差即证据。</p>
+      </div>
+      <div class="fcol">
+        <h4><span class="ico">💪</span>优势</h4>
+        <p>零推算依赖：所有条目都是原文摘录，来源属性（营销页/文档页/混合/第三方）逐条标注，争议最小；暖红/冷绿双色系强制区分信息性质，读者不会把话术误当条款；「水分指数」只引用该厂商自己的 gotchas 作评级依据，定性而不虚构数字。</p>
+      </div>
+      <div class="fcol">
+        <h4><span class="ico">⚖️</span>局限</h4>
+        <p>营销与条款条目并非一一对应，逐行对撞是编辑性排布而非官方对照关系；水分指数为定性评级，不回答"哪家更划算"；营销页本身是动态页面（部分为 SPA，依赖第三方转述），话术可能随版本调整而变化。</p>
+      </div>
+    </div>
+    <div class="snapshot">
+      <strong>数据快照日期：</strong><span id="snap-date">2026-07-17</span>　|　
+      <strong>免责说明：</strong><span id="disclaimer">价格与条款随官方调整而变化；本快照仅反映调研当日公开页面。第三方数据与推算均已显式标注。</span>
+    </div>
+  </section>
+
+</div>
+
+<script src="./shared/data.js"></script>
+<script>
+(function(){
+  var app = document.getElementById('app');
+  var D = window.PLAN_BATTLE_DATA;
+  if(!D || !D.vendors){
+    app.innerHTML = '<div class="no-data">⚠ 未能加载 shared/data.js（PLAN_BATTLE_DATA 不存在）。请确认本文件与 shared/ 目录相对位置未变，且通过 file:// 直接打开。</div>';
+    return;
+  }
+
+  /* 元信息注入 */
+  document.getElementById('snap-date').textContent = D.meta.generatedAt;
+  document.getElementById('disclaimer').textContent = D.meta.disclaimer;
+
+  /* 水分指数评级表：任务规定的定性评级（引用各厂 gotchas 作依据，不虚构数字） */
+  var WATER_INDEX = {
+    'xiaomi-mimo': { level: 5, label: '极高', theme: '单位混淆' },
+    'zhipu-glm':   { level: 4, label: '高',   theme: '高峰倍率' },
+    'kimi':        { level: 4, label: '高',   theme: '额度黑箱' },
+    'minimax':     { level: 3, label: '中',   theme: '窗口复杂' }
+  };
+  var SEV_NAME = { high:'高', mid:'中', low:'低' };
+
+  function esc(s){
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* 来源标签 → 样式类 */
+  function srcClass(src){
+    var hasMk = src.indexOf('营销') >= 0;
+    var hasFp = src.indexOf('文档') >= 0 || src.indexOf('帮助') >= 0 || src.indexOf('说明') >= 0 || src.indexOf('公告') >= 0;
+    var hasThird = src.indexOf('第三方') >= 0;
+    if(hasThird && !hasMk && !hasFp) return 'third';
+    if(hasMk && hasFp) return 'mix';
+    if(hasMk) return 'mkmk';
+    if(hasFp) return 'fpfp';
+    if(hasThird) return 'third';
+    return 'mix';
+  }
+
+  /* ── (a) 方法说明卡：用第一个厂商的第一对条目做示范 ── */
+  function renderMethod(){
+    var demo = D.vendors[0]; /* 小米：营销/条款落差最典型 */
+    var mk = demo.marketing[0], fp = demo.fineprint[0];
+    return ''
+    + '<section class="method">'
+    +   '<h2>(a) 读法说明：一行为一次「对撞」</h2>'
+    +   '<p class="desc">左栏为营销页原话（暖色），右栏为文档页条款（冷色），中间 ⚡ 为证伪点。两侧文字均逐条摘自原始页面并标注来源属性；排布为编辑性对照，非官方对应关系。示例（' + esc(demo.company) + '）：</p>'
+    +   '<div class="duel">'
+    +     '<div class="side mk"><span class="side-tag">营销页</span>'
+    +       '<div class="quote">「' + esc(mk.claim) + '」</div>'
+    +       '<div class="note">话术性质：面向转化的大数字表达（来源：' + esc(mk.source) + '）</div>'
+    +     '</div>'
+    +     '<div class="bolt"><span class="badge">⚡</span></div>'
+    +     '<div class="side fp"><span class="side-tag">文档页</span>'
+    +       '<div class="quote">「' + esc(fp.clause) + '」</div>'
+    +       '<div class="note">条款性质：面向免责的计费细则（来源：' + esc(fp.source) + '）</div>'
+    +     '</div>'
+    +   '</div>'
+    +   '<div class="legend">'
+    +     '<span class="chip"><span class="dot mk"></span>暖红 = 营销话术（说服你买）</span>'
+    +     '<span class="chip"><span class="dot fp"></span>冷绿 = 文档条款（界定你实际买到什么）</span>'
+    +     '<span class="chip">来源标签：<b style="color:#c2400f">营销页</b> / <b style="color:#0f6b3c">文档页</b> / <b style="color:#5b5bd6">混合来源</b> / <b style="color:#8a6d00">第三方</b></span>'
+    +   '</div>'
+    + '</section>';
+  }
+
+  /* ── (b) 单条对撞行 ── */
+  function clashRow(mk, fp){
+    var left = mk
+      ? '<div class="clash mk"><div class="text">「' + esc(mk.claim) + '」</div><span class="src ' + srcClass(mk.source) + '">' + esc(mk.source) + '</span></div>'
+      : '<div class="clash empty">（营销页无更多对应话术）</div>';
+    var right = fp
+      ? '<div class="clash fp"><div class="text">「' + esc(fp.clause) + '」</div><span class="src ' + srcClass(fp.source) + '">' + esc(fp.source) + '</span></div>'
+      : '<div class="clash empty">（文档页无更多对应条款）</div>';
+    return '<div class="clash-row">' + left + '<div class="bolt"><span class="badge vs">VS</span></div>' + right + '</div>';
+  }
+
+  /* ── (c) 水分指数仪表 ── */
+  function renderGauge(v){
+    var w = WATER_INDEX[v.id];
+    if(!w) return '';
+    var segs = '';
+    for(var i = 1; i <= 5; i++){
+      segs += '<span class="seg' + (i <= w.level ? ' on-' + w.level : '') + '"></span>';
+    }
+    var basis = v.gotchas.map(function(g){
+      return '<div class="basis-item">'
+        + '<span class="sev s-' + esc(g.severity) + '">' + esc(SEV_NAME[g.severity] || g.severity) + '</span>'
+        + '<span class="glabel">' + esc(g.label) + '</span>' + esc(g.detail)
+        + '</div>';
+    }).join('');
+    return ''
+    + '<div class="gauge-block">'
+    +   '<div class="gauge-top">'
+    +     '<div class="gauge-title">水分指数<small>文字游戏严重度 · 定性评级 · 五级</small></div>'
+    +     '<div class="gauge-meter">'
+    +       '<div class="segs">' + segs + '</div>'
+    +       '<span class="level lv' + w.level + '">' + w.label + '<small>' + esc(w.theme) + '</small></span>'
+    +     '</div>'
+    +   '</div>'
+    +   '<div class="gauge-basis">'
+    +     '<div class="basis-title">评级依据（引用该厂商已标注的陷阱条目 / gotchas）</div>'
+    +     '<div class="basis-grid">' + basis + '</div>'
+    +   '</div>'
+    + '</div>';
+  }
+
+  /* ── 折算口径说明（仅在有 computed 时展示，且显式展示假设） ── */
+  function renderCalcNote(v){
+    if(!v.computed) return '';
+    return '<div class="calc-note"><span class="tag">折算口径</span>'
+      + esc(v.computed.verdict)
+      + '<br><span class="assume">假设：' + esc(v.computed.assumption)
+      + '；标准任务轮定义：' + esc(D.standardTask.definition)
+      + '（输入 ' + (D.standardTask.inputTokens/1000) + 'K / 缓存命中 ' + (D.standardTask.cacheHitRate*100) + '% / 输出 ' + (D.standardTask.outputTokens/1000) + 'K，' + esc(D.standardTask.note) + '）</span>'
+      + '</div>';
+  }
+
+  /* ── (b)+(c) 厂商档案 ── */
+  function renderVendor(v, idx){
+    var rows = '';
+    var n = Math.max(v.marketing.length, v.fineprint.length);
+    for(var i = 0; i < n; i++){
+      rows += clashRow(v.marketing[i], v.fineprint[i]);
+    }
+    return ''
+    + '<section class="vendor">'
+    +   '<div class="vendor-head">'
+    +     '<div class="no">' + (idx+1) + '</div>'
+    +     '<div class="who">'
+    +       '<h3>' + esc(v.company) + '<small>' + esc(v.name) + '</small></h3>'
+    +       '<div class="links">营销页：<a href="' + esc(v.marketingUrl) + '">' + esc(v.marketingUrl) + '</a>　·　文档页：<a href="' + esc(v.docsUrl) + '">' + esc(v.docsUrl) + '</a></div>'
+    +     '</div>'
+    +   '</div>'
+    +   '<div class="collision">'
+    +     '<div class="col-head"><span class="l">◀ 营销页怎么说</span><span class="c">⚡ 对撞</span><span class="r">文档页怎么写 ▶</span></div>'
+    +     rows
+    +   '</div>'
+    +   renderCalcNote(v)
+    +   renderGauge(v)
+    + '</section>';
+  }
+
+  var html = renderMethod();
+  html += '<div style="margin-top:40px;font-size:13px;letter-spacing:.2em;color:var(--ink-soft);font-weight:700">— (b) 厂商档案 × 4：逐条对撞 —</div>';
+  D.vendors.forEach(function(v, i){ html += renderVendor(v, i); });
+  app.innerHTML = html;
+})();
+</script>
+</body>
+</html>

@@ -20,18 +20,59 @@ export default defineConfig({
     },
   }),
   manifest: {
-    name: '智谱秒杀助手',
-    description: '多平台 Coding Plan 秒杀助手浏览器扩展（智谱 / 火山引擎）',
-    permissions: ['storage', 'tabs', 'scripting', 'alarms', 'notifications'],
-    host_permissions: ['*://*.bigmodel.cn/*', '*://*.volcengine.com/*'],
+    name: '智能Coding Plan助手',
+    description: '智能 Coding Plan 助手：多平台套餐秒杀（智谱 / 火山引擎 / 阿里百炼 / 百度千帆）+ 买家秀 UGC + AI 新闻 + Token 用量监控',
+    permissions: ['storage', 'tabs', 'scripting', 'alarms', 'notifications', 'cookies', 'declarativeNetRequest'],
+    host_permissions: [
+      '*://*.bigmodel.cn/*',
+      '*://*.volcengine.com/*',
+      '*://*.aliyun.com/*',
+      '*://*.bce.baidu.com/*',
+      '*://*.minimaxi.com/*',
+      '*://*.kimi.com/*',
+      '*://*.xiaomimimo.com/*',
+      '*://rocke1001feller.github.io/*',
+      // ai-news 国内反代镜像（github.io 不可达时回退）
+      'https://xiaocha.online/*',
+      // 买家秀 iframe(public/buyer-show/)只读拉取 any-comments 聚合数据
+      'https://any-comments-worker.poorhub.workers.dev/*',
+      // any-comments 国内反代（vendored popup 的 CN 构建 + 现场层 field.js 读写都走这里）
+      'https://ac-api.xiaocha.online/*',
+    ],
+    content_scripts: [
+      {
+        // 买家秀现场层:vendor 自 any-comments example-showcase/dist-ext/field.js(CN 构建),
+        // 营销页 + 文档站全站内嵌评分/标签/评论覆盖层,数据同入 ac-coding-plan 项目
+        matches: [
+          '*://platform.xiaomimimo.com/token-plan*',
+          '*://mimo.mi.com/docs/*',
+          '*://platform.minimaxi.com/subscribe/token-plan*',
+          '*://platform.minimaxi.com/docs/*',
+          '*://bigmodel.cn/glm-coding*',
+          '*://docs.bigmodel.cn/cn/*',
+          '*://www.kimi.com/membership/pricing*',
+          '*://www.kimi.com/code/docs/*',
+        ],
+        js: ['buyer-show/field.js'],
+        run_at: 'document_idle',
+      },
+    ],
     web_accessible_resources: [
       {
         resources: ['bm-early.js', 'bm-main.js'],
         matches: ['*://*.bigmodel.cn/*'],
       },
       {
-        resources: ['volc-agentplan-main.js', 'volc-codingplan-main.js'],
+        resources: ['volc-main.js'],
         matches: ['*://*.volcengine.com/*'],
+      },
+      {
+        resources: ['ali-main.js'],
+        matches: ['*://*.aliyun.com/*'],
+      },
+      {
+        resources: ['bce-main.js'],
+        matches: ['*://*.bce.baidu.com/*'],
       },
     ],
   },

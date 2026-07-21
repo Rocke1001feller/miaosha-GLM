@@ -29,12 +29,12 @@ describe('fireStore', () => {
   it('falls back unknown enum values to defaults', async () => {
     // Simulate legacy/corrupted storage values
     await fakeBrowser.storage.local.set({
-      fireConfig: { payType: 'unknown', burstIntervalMs: 400 },
+      fireConfig: { payType: 'unknown', burstIntervalMs: 2300 },
     });
 
     const cfg = await fireStore.get();
     expect(cfg.payType).toBe('ALI');
-    expect(cfg.burstIntervalMs).toBe(400);
+    expect(cfg.burstIntervalMs).toBe(2300);
   });
 
   it('falls back to default interval when stored value is invalid', async () => {

@@ -67,8 +67,10 @@ describe('loadProducts', () => {
     captured[0].fn();
     await flushPromises();
 
+    // Product loading must stay in the MAIN world: no command is posted to
+    // the content script (a content-script proxy would be blocked by WAF).
     expect(postMessage).not.toHaveBeenCalledWith(
-      expect.objectContaining({ __miaosha_cmd: true, type: 'REFRESH_BATCH_PREVIEW' }),
+      expect.objectContaining({ __miaosha_cmd: true }),
       '*',
     );
     expect(fetch).toHaveBeenCalledTimes(1);

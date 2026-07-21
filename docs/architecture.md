@@ -1,4 +1,4 @@
-# 智谱秒杀助手 — 代码库架构与基本原理
+# 智能Coding Plan助手 — 代码库架构与基本原理
 
 **版本**: 基于 2026-05-30 代码状态  
 **构建工具**: WXT 0.20.26 · Vite · TypeScript · Svelte 5  
@@ -12,6 +12,12 @@
 
 本扩展的核心目标：**让用户在秒杀开始前做好准备、在秒杀瞬间以最快速度完成下单**。
 
+扩展同时支持火山引擎（volc-main）、阿里百炼（ali-main）与百度千帆（bce-main）三个平台的 Coding Plan 抢购；本文为智谱主链路架构，其他平台为同构 overlay 变体。
+
+popup 另设"秒杀 | 用量"底部 tab，用量视图经 M6 重放（扩展上下文直连）聚合 MiniMax / Kimi / 小米 MiMo / 火山引擎四平台套餐用量（`lib/usage/`，协议细节见 `docs/superpowers/specs/2026-07-18-usage-tab-design.md`）。
+
+用量会话自愈（2026-07-21 两轮实证）：MiMo 的 `api-platform_*` 与火山的 `csrfToken`/`digest` 均为会话级凭证，浏览器退出即失效；Kimi 的 access_token 存于 kimi.com localStorage（跨重启存活），但扩展侧缓存可能因重装丢失。统一经 `healViaTab` 标签页自愈：MiMo 401、火山 NotLogin、Kimi 无缓存 token 时，自动打开/刷新对应控制台标签页，借平台 SSO 或页面 localStorage 重铸/捕获凭证后重试；自建标签页用后即关。火山另有双提交 CSRF 校验，缺失时合成随机 `csrfToken` 补齐 cookie + header 两端即可。
+
 功能按需求编号（R1–R4）组织：
 
 | 需求 | 功能 | 载体 |
@@ -20,8 +26,8 @@
 | R2 | 验证码预取（Tencent CAPTCHA ticket 池） | bm-capture content script + bm-main |
 | R3 | bigmodel.cn 标签页内视觉+音频提醒 | bm-capture content script |
 | R4 | 扩展图标角标倒计时 | Background service worker |
-| DEV | API 调试面板（直接调用 bigmodel API） | Popup DEV 模式 |
-| PROD | 秒杀操作面板（一键开火、支付轮询） | Popup PROD 模式 |
+| NEWS | AI 聚合新闻阅读（读取 rocke1001feller.github.io 静态 JSON） | Popup「AI 新闻」面板 |
+| PROD | 平台秒杀入口导航 + 各平台额度用量 | Popup「抢购秒杀」「Token 用量」面板 |
 
 ---
 
@@ -45,12 +51,15 @@
 │  │    Popup       │   │                                           │ │
 │  │                │   └──────────────────────────────────────────┘ │
 │  │  ┌──────────┐  │                                                 │
-│  │  │  DEV 模式│  │   chrome.storage.local ◄──── 所有组件共享存储  │
-│  │  │  API调试  │  │                                                 │
+│  │  │ Header:  │  │   chrome.storage.local ◄──── 所有组件共享存储  │
+│  │  │ AI 新闻 / │  │                                                 │
+│  │  │ Token 用量│  │                                                 │
 │  │  └──────────┘  │                                                 │
 │  │  ┌──────────┐  │                                                 │
-│  │  │ PROD 模式│  │                                                 │
-│  │  │ 秒杀操作  │  │                                                 │
+│  │  │ Footer:  │  │                                                 │
+│  │  │ 设置/买家秀│  │                                                 │
+│  │  │ 秒杀/    │  │                                                 │
+│  │  │ 拼团转让  │  │                                                 │
 │  │  └──────────┘  │                                                 │
 │  └────────────────┘                                                 │
 └─────────────────────────────────────────────────────────────────────┘
@@ -105,18 +114,20 @@ XHR 拦截到验证码响应               监听 window message
 
 ### 3.3 `entrypoints/popup/` — Popup 页面
 
-Svelte 5 应用，380×520px，两个模式通过 Topbar 切换：
+Svelte 5 应用，380×520px。单一激活 tab 模型（`tabs.ts`）：header 与 footer 共 6 个按钮互斥切换，同一时刻只渲染一个面板；每次打开默认显示「Token 用量」。
 
 ```
 App.svelte
-├── Topbar.svelte          ← DEV / PROD 切换按钮
-├── DevContent.svelte      ← DEV 模式：API 测试面板
-│   ├── AuthStatusBadge    ← 显示当前 auth 状态
-│   ├── ApiEndpointCard    ← 单个 API 卡片（请求/响应）
-│   └── TestResultPanel    ← JSON 高亮渲染
-├── ProdContent.svelte     ← PROD 模式：秒杀操作面板
-│   └── PaymentCard        ← 支付二维码 + 状态轮询
-└── Footer.svelte          ← 版本信息
+├── tabs.ts                ← PopupTab 类型 + 默认 tab + 按钮元数据（单一事实源）
+├── Topbar.svelte          ← Header 两 tab：AI 新闻 / Token 用量（高频功能）
+├── NewsContent.svelte     ← AI 新闻面板：AI 聚合新闻阅读
+│   ├── NewsFilterBar      ← 窗口 / 平台 / 搜索
+│   ├── NewsList           ← 分页新闻列表
+│   └── NewsCard           ← 单条新闻卡片
+├── UsageView.svelte       ← Token 用量面板（默认）：各平台 Coding Plan 额度用量
+├── PlatformEntryGrid.svelte ← 抢购秒杀面板：平台入口卡片（智谱 / 火山引擎 / 阿里百炼 / 百度千帆）
+├── PlaceholderPanel.svelte ← 占位面板（买家秀 UGC 点评 / 拼团转让交易，敬请期待）
+└── Footer.svelte          ← 底部等宽分段控件：设置（打开选项页）+ 买家秀 / 秒杀 / 拼团转让
 ```
 
 ### 3.4 `entrypoints/options/` — 选项页
@@ -188,13 +199,13 @@ WXT storage key: `local:authHeaders`（对应 `chrome.storage.local['local:authH
 ### 获取路径
 
 ```
-captureFromTab()
+captureFromTab() (bm-capture.content.ts)
   └→ executeScript(bigmodel.cn tab, MAIN world)
        └→ 读 document.cookie['bigmodel_token_production']  → authorization
        └→ 读 localStorage['Bigmodel-Organization']         → bigmodelOrganization
        └→ 读 localStorage['Bigmodel-Project']              → bigmodelProject
        └→ 返回 AuthHeaders 对象
-  └→ authStore.set(captured)   ← 写入 chrome.storage.local
+  └→ 写入 chrome.storage.local['local:authHeaders']
   └→ return captured
 ```
 
@@ -244,7 +255,7 @@ window.postMessage → bm-capture.content.ts
 ### 使用流程（秒杀触发）
 
 ```
-用户点击"开火"按钮（PROD 模式或 bm-main 覆盖层）
+用户点击"开火"按钮（popup 抢购秒杀面板或 bm-main 覆盖层）
   ↓
 bm-capture.content.ts 读取 local:ticketPool
   ↓
@@ -261,10 +272,10 @@ buildAutoFirePlan() 按优先级与过期紧迫度分配 ticket
 
 | WXT Key | 实际 Storage Key | 类型 | 写入者 | 读取者 |
 |---------|-----------------|------|--------|--------|
-| `local:authHeaders` | `local:authHeaders` | `AuthHeaders` | bm-capture, authStore.set | popup, bm-capture |
+| `local:authHeaders` | `local:authHeaders` | `AuthHeaders` | bm-capture | bm-capture |
 | `local:ticketPool` | `local:ticketPool` | `Ticket[]` | bm-capture | bm-capture (开火时) |
 | `local:saleTimeConfig` | `local:saleTimeConfig` | `SaleTimeConfig` | options 页 | background, bm-capture |
-| `local:devMode` | `local:devMode` | `'development'\|'production'` | popup Topbar | popup App.svelte |
+| `local:newsCache` | `local:newsCache` | `NewsCacheEntry` | NewsContent | NewsContent |
 | `local:selectedProducts` | `local:selectedProducts` | `{priorityList: Array<{productId, percentage}>, count, version}` | bm-main 覆盖层 | bm-capture (开火时) |
 
 **WXT storage 命名约定**: `local:` 前缀表示 `chrome.storage.local`（区别于 `session:` 和 `sync:`）。WXT 的 `storage.setItem('local:foo', v)` 等价于 `chrome.storage.local.set({'local:foo': v})`——key 是字面量，不做前缀 strip。
@@ -294,6 +305,10 @@ document.head.appendChild(script);
 3. 渲染秒杀覆盖层 UI（拖拽、商品选择、ticket 计数、一键开火）
 4. 监听覆盖层 UI 事件 → `window.postMessage` → bm-capture
 
+`ali-main.js`（阿里百炼）：轮询 `buy-api.aliyun.com/commodity/checkInventoryDetail.json` 获取库存与 `restockingTimeStamp`，补货时刻自动 `POST /order/createOrder.json`（带 `X-XSRF-TOKEN`、`umidToken/collina/submitref/linkage` 风控字段），成功或出现未支付订单即停手并引导用户手动支付。协议细节见 `docs/superpowers/specs/2026-07-17-bailian-codingplan-seckill-design.md`。
+
+`bce-main.js`（百度千帆）：轮询 `/api/qianfan/charge/tokenPlanPersonal/firstPurchaseConfig` 获取四档 `available` 与 `times` 开售时刻，补货翻转后按勾选优先级 `POST /api/qianfan/charge/order/new`（带 `csrftoken` 头，取自 `bce-user-info` cookie），成功即跳 `/finance/pay` 收银台由用户手动支付。协议细节见 `docs/superpowers/specs/2026-07-18-baidu-tokenplan-seckill-design.md`。
+
 ---
 
 ## 9. 构建与开发
@@ -303,23 +318,55 @@ document.head.appendChild(script);
 ```
 /
 ├── entrypoints/
-│   ├── background.ts          # Service worker
-│   ├── bm-capture.content.ts  # Content script (ISOLATED)
-│   ├── popup/                 # Popup 页面 (Svelte 5)
-│   └── options/               # 选项页 (Svelte 5)
+│   ├── ali-capture.content.ts   # 阿里百炼 content script (ISOLATED)
+│   ├── background.ts            # Service worker
+│   ├── bce-capture.content.ts   # 百度千帆 content script (ISOLATED)
+│   ├── bm-capture.content.ts    # bigmodel content script (ISOLATED)
+│   ├── bm-early.content.ts      # document_start 抢注 bm-early.js
+│   ├── volc-capture.content.ts  # 火山双活动页 content script (ISOLATED)
+│   ├── popup/                   # Popup 页面 (Svelte 5)
+│   └── options/                 # 选项页 (Svelte 5)
 ├── lib/
 │   ├── api/
-│   │   ├── types.ts           # 共享类型定义
-│   │   ├── catalog.ts         # API 端点目录（7个端点）
-│   │   ├── client.ts          # executeScript 代理请求
-│   │   ├── auth-store.ts      # Auth CRUD + captureFromTab
-│   │   └── fire-plan.ts       # ticket 分配与自动开火计划
+│   │   ├── smart-fire-plan.ts   # 智能自动开火计划
+│   │   └── strike-plan.ts       # 手动/BURST 加权轮询队列
+│   ├── news/
+│   │   ├── types.ts           # 新闻数据类型（来自 ai-news-aggregator）
+│   │   ├── provider.ts        # NewsProvider 注册表
+│   │   ├── providers/gh-pages.ts  # 静态 JSON 数据源
+│   │   ├── cache.ts           # stale-while-revalidate 缓存
+│   │   ├── bilingual.ts       # 双语阅读（句级/段级粒度）
+│   │   ├── links.ts           # 原文/快照链接策略
+│   │   ├── read-state.ts      # 已读状态管理
+│   │   ├── sanitize.ts        # 快照 HTML 清洗
+│   │   └── ui-state.ts        # 列表 UI 状态
+│   ├── platform/
+│   │   ├── types.ts             # 平台契约（领域模型 + IAuthProbe/IOrderPipeline）
+│   │   ├── index.ts             # PLATFORMS 静态入口表 + bigmodelAdapter
+│   │   ├── adapters/bigmodel/   # auth-probe / order-pipeline / request
+│   │   └── shared/stores/       # createAuthStore（chrome.storage / memory）
+│   ├── usage/
+│   │   ├── types.ts             # 用量数据类型
+│   │   ├── parsers.ts           # 各平台用量解析器
+│   │   ├── providers.ts         # 用量数据源（M6 providers）
+│   │   └── store.ts             # 用量缓存存储
 │   └── settings/
-│       └── dev.ts             # DevMode 设置
+│       ├── sale-time.ts         # 秒杀时间配置 + getNextSaleTime
+│       ├── fire.ts              # Fire 发射参数
+│       └── captcha.ts           # 验证码批量录入配置
+├── src/
+│   ├── ali-main/                # 阿里百炼 MAIN world 覆盖层源码
+│   ├── bce-main/                # 百度千帆 MAIN world 覆盖层源码
+│   ├── bm-main/                 # bigmodel MAIN world 覆盖层源码
+│   └── volc-main/               # 火山 MAIN world 覆盖层源码（运行时探测平台）
 ├── public/
-│   └── bm-main.js             # MAIN world 注入脚本（静态文件）
-├── output/chrome-mv3/         # 构建产物（不提交 git）
-└── wxt.config.ts              # 扩展配置
+│   ├── ali-main.js              # 生成物（scripts/build-overlay.js）
+│   ├── bce-main.js              # 生成物（scripts/build-overlay.js）
+│   ├── bm-early.js              # 手写：batch-preview 响应缓存（fetch 包装）
+│   ├── bm-main.js               # 生成物（scripts/build-overlay.js）
+│   └── volc-main.js             # 生成物（scripts/build-overlay.js）
+├── output/chrome-mv3/           # 构建产物（不提交 git）
+└── wxt.config.ts                # 扩展配置
 ```
 
 ### 命令
@@ -355,10 +402,11 @@ Background service worker 可以发 `fetch`，但请求的 `origin` 是 `chrome-
 
 Tencent CAPTCHA 的 ticket 有效期约 5 分钟（超期返回错误码 8）。如果用户提前预取了 ticket 但秒杀推迟，过期的 ticket 会导致下单失败。TTL 自动淘汰确保池中始终只有有效 ticket。
 
-### D4：为什么 Auth 每次 popup 打开时都刷新
+### D4：为什么 popup 新闻模块选择「静态 JSON 即 API」
 
-DEV 调试面板是核心工具，依赖有效 JWT。用户可能在：
-- 重新登录 bigmodel.cn（JWT 轮换）
-- 切换组织/项目（org/project ID 变化）
+AI 聚合新闻由 GitHub Actions 每 2 小时生成静态 JSON，部署在 GitHub Pages：
+- 零后端服务器成本，扩展不维护数据源；
+- 响应头 `access-control-allow-origin: *`，扩展页 fetch 无 CORS 阻碍；
+- 使用 stale-while-revalidate 缓存，popup 打开时先读本地缓存秒开，后台静默刷新。
 
-任何缓存都可能导致 API 请求失败（服务端返回 `content-length: 0` 或 1001 认证错误）。每次 popup 打开时主动从 tab 抓取当前 session 凭证，是最简单也最可靠的方案。
+新闻 UI 与数据获取通过 `NewsProvider` 接口解耦，未来可接入其他数据源而无需重写 UI。

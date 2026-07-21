@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>P4 · 日本服务器全透明反向代理</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="./index.html">← 返回总览</a>
+
+  <header class="hero">
+    <span class="kicker">方案 P4</span>
+    <h1>日本服务器全透明反向代理</h1>
+    <p>底层逻辑：<strong>整站中转</strong>——你的日本服务器对任意目标 URL 做完整反向代理（HTML/CSS/JS/图片全部改写转发），用户看到的就是原站本身。保真度天花板，但也是五个方案中最重、最脆、最危险（滥用面）的一个。</p>
+  </header>
+
+  <div class="card">
+    <h3>点击时序</h3>
+    <div class="flow">用户在 popup 点击新闻卡片
+  → 改写为 https://&lt;jp-relay&gt;/p/&lt;base64url 原文&gt;
+  → 服务器拉取原站 HTML，重写其中所有相对/绝对资源链接（CSS/JS/图/字体）指向自己
+  → 后续所有子资源请求都经服务器中转
+  → 用户看到「原站原样」页面（包括它的广告、弹窗与反爬验证）</div>
+  </div>
+
+  <div class="card">
+    <h3>组成</h3>
+    <ul class="dots">
+      <li>反代实现：Caddy / nginx + 链接重写模块，或 ~200 行 Go/Node 自写（fetch + HTML 流式改写 + Set-Cookie/CSP 头处理）。</li>
+      <li>弹窗内跳转链接同样需改写（否则用户点进文章内链接就掉出代理）。</li>
+      <li>WebSocket / Service Worker / 重定向链 / 验证码页的边角处理（真正的复杂度在这里）。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>成本</h3>
+    <span class="tag mid">服务器已有 0 新增</span>
+    <ul class="dots">
+      <li>服务器现成；但<b>带宽是真成本</b>：整页（含图/JS）单篇 1–5MB 经你中转，量上来后流量费/带宽峰值要考虑。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>优点</h3>
+    <ul class="dots">
+      <li>排版 100% 保真，任何站点形态都「看起来对」；</li>
+      <li>不依赖正文提取算法的命中率。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>局限与风险（务必读完再选）</h3>
+    <ul class="dots">
+      <li><b>滥用风险最高</b>：一个能代理任意 URL 的端点一旦被发现，就会被当免费公开代理刷爆。<b>必须</b>做硬限制：仅允许出现在当前新闻数据集中的 URL（动态允许列表），或带 HMAC 签名的一次性链接，否则不要上线。</li>
+      <li><b>脆</b>：Cloudflare 盾/验证码/JS 挑战页会把用户卡在反爬页（体验比打不开更差）；CORS、cookie SameSite、CSP 头处理坑多。</li>
+      <li><b>重</b>：带宽、并发、运维（证书续期、宕机监控）全是你的。</li>
+      <li>合规面更宽：整站镜像式中转 vs 阅读器式正文引用，前者更接近"复制站点"。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>什么时候才选它</h3>
+    <ul class="dots">
+      <li>只有当你确认「必须给用户看原站完整排版与交互」（如交互式图表、原站评论）时才值得。对"读 AI 新闻"这个需求，P2/P3 的阅读版式几乎总是更好的体验。</li>
+    </ul>
+  </div>
+
+  <footer>P4 · 保真天花板 · 也是最重最险的一条路</footer>
+</div>
+</body>
+</html>

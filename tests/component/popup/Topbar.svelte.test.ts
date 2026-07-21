@@ -13,58 +13,57 @@ import Topbar from '../../../entrypoints/popup/components/Topbar.svelte';
 describe('Topbar', () => {
   it('renders the brand name', () => {
     render(Topbar, {
-      props: { mode: 'development', onmodechange: () => {} },
+      props: { tab: 'usage', ontabchange: () => {} },
     });
-    expect(screen.getByText('Coding Plan 秒杀助手')).toBeInTheDocument();
+    expect(screen.getByText('智能Coding Plan助手')).toBeInTheDocument();
   });
 
-  it('renders DEV and PROD toggle buttons', () => {
+  it('renders AI 新闻 and Token 用量 tab buttons', () => {
     render(Topbar, {
-      props: { mode: 'development', onmodechange: () => {} },
+      props: { tab: 'usage', ontabchange: () => {} },
     });
-    expect(screen.getByRole('button', { name: 'DEV' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'PROD' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'AI 新闻' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Token 用量' })).toBeInTheDocument();
   });
 
-  it('marks the DEV button active when mode is development', () => {
+  it('marks AI 新闻 active when tab is news', () => {
     render(Topbar, {
-      props: { mode: 'development', onmodechange: () => {} },
+      props: { tab: 'news', ontabchange: () => {} },
     });
-    const devBtn = screen.getByRole('button', { name: 'DEV' });
-    expect(devBtn).toHaveClass('active');
-    expect(screen.getByRole('button', { name: 'PROD' })).not.toHaveClass('active');
+    expect(screen.getByRole('tab', { name: 'AI 新闻' })).toHaveClass('active');
+    expect(screen.getByRole('tab', { name: 'Token 用量' })).not.toHaveClass('active');
   });
 
-  it('marks the PROD button active when mode is production', () => {
+  it('marks Token 用量 active when tab is usage', () => {
     render(Topbar, {
-      props: { mode: 'production', onmodechange: () => {} },
+      props: { tab: 'usage', ontabchange: () => {} },
     });
-    expect(screen.getByRole('button', { name: 'PROD' })).toHaveClass('active');
-    expect(screen.getByRole('button', { name: 'DEV' })).not.toHaveClass('active');
+    expect(screen.getByRole('tab', { name: 'Token 用量' })).toHaveClass('active');
+    expect(screen.getByRole('tab', { name: 'AI 新闻' })).not.toHaveClass('active');
   });
 
-  it('calls onmodechange("production") when PROD is clicked', async () => {
+  it('calls ontabchange("usage") when Token 用量 is clicked', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
 
     render(Topbar, {
-      props: { mode: 'development', onmodechange: onChange },
+      props: { tab: 'news', ontabchange: onChange },
     });
 
-    await user.click(screen.getByRole('button', { name: 'PROD' }));
+    await user.click(screen.getByRole('tab', { name: 'Token 用量' }));
     expect(onChange).toHaveBeenCalledOnce();
-    expect(onChange).toHaveBeenCalledWith('production');
+    expect(onChange).toHaveBeenCalledWith('usage');
   });
 
-  it('calls onmodechange("development") when DEV is clicked', async () => {
+  it('calls ontabchange("news") when AI 新闻 is clicked', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
 
     render(Topbar, {
-      props: { mode: 'production', onmodechange: onChange },
+      props: { tab: 'usage', ontabchange: onChange },
     });
 
-    await user.click(screen.getByRole('button', { name: 'DEV' }));
-    expect(onChange).toHaveBeenCalledWith('development');
+    await user.click(screen.getByRole('tab', { name: 'AI 新闻' }));
+    expect(onChange).toHaveBeenCalledWith('news');
   });
 });

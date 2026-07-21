@@ -30,58 +30,68 @@ window.addEventListener('message', function(ev) {
     writePageTicketStore(d.list);
   } else if (d.type === 'CLEAR_TICKET_STORE') {
     clearPageTicketStore();
+  } else if (d.type === 'PAGE_FETCH_REQUEST' && d.reqId && d.url) {
+    handlePageFetchRequest(d);
   }
 });
 
-// ── Runtime state (latency calibration + auto-fire scheduler) ──
+function handlePageFetchRequest(d) {
+  var auth = getLocalAuthHeaders();
+  if (!auth) {
+    window.postMessage({
+      __miaosha_cmd: true,
+      type: 'PAGE_FETCH_RESPONSE',
+      reqId: d.reqId,
+      ok: false,
+      error: 'auth-missing'
+    }, '*');
+    return;
+  }
+  var headers = Object.assign({}, d.headers || {});
+  if (!headers.authorization) headers.authorization = auth.authorization;
+  if (!headers['bigmodel-organization']) headers['bigmodel-organization'] = auth.bigmodelOrganization;
+  if (!headers['bigmodel-project']) headers['bigmodel-project'] = auth.bigmodelProject;
+
+  window.fetch(d.url, {
+    method: d.method || 'GET',
+    credentials: 'include',
+    headers: headers,
+    body: d.body || undefined,
+  })
+  .then(function(res) {
+    var responseHeaders = {};
+    res.headers.forEach(function(value, key) {
+      responseHeaders[key.toLowerCase()] = value;
+    });
+    return res.text().then(function(bodyText) {
+      return { ok: true, status: res.status, statusText: res.statusText, headers: responseHeaders, bodyText: bodyText };
+    });
+  })
+  .then(function(payload) {
+    window.postMessage(Object.assign({
+      __miaosha_cmd: true,
+      type: 'PAGE_FETCH_RESPONSE',
+      reqId: d.reqId,
+    }, payload), '*');
+  })
+  .catch(function(err) {
+    window.postMessage({
+      __miaosha_cmd: true,
+      type: 'PAGE_FETCH_RESPONSE',
+      reqId: d.reqId,
+      ok: false,
+      error: err && err.message ? err.message : 'network-error'
+    }, '*');
+  });
+}
+
+// ── Runtime state (auto-fire scheduler) ──
 var _rt = {
-  latencyMs: 0,       // one-way latency estimate from runtime calibration probes
-  clockOffsetMs: 0,   // local clock vs server Date header estimate (ms, can be negative)
   nextSaleTime: 0,    // next sale epoch ms (UTC)
   autoTimer: null,    // setTimeout handle for auto-fire
   countdownTimer: null, // setInterval handle for countdown display
   autoFired: false,   // guard: fire only once per scheduled event
-  calibratedAt: 0,    // runtime calibration timestamp (epoch ms)
-  sampleCount: 0,     // number of probes used by latest calibration
 };
-
-function updateRuntimeDisplay() {
-  var latEl = document.getElementById('_lat');
-  if (latEl) {
-    var latValue = _rt.calibratedAt > 0 ? String(_rt.latencyMs) : '--';
-    latEl.innerHTML = latValue + '<span style="font-size:9px;color:#94a3b8">ms</span>';
-  }
-  var clkEl = document.getElementById('_clk');
-  if (clkEl) {
-    if (_rt.calibratedAt <= 0) {
-      clkEl.innerHTML = '--<span style="font-size:9px;color:#94a3b8">ms</span>';
-    } else {
-      var sign = _rt.clockOffsetMs >= 0 ? '+' : '';
-      clkEl.innerHTML = sign + _rt.clockOffsetMs + '<span style="font-size:9px;color:#94a3b8">ms</span>';
-    }
-  }
-}
-
-function applyRuntimeCalibration(data) {
-  if (!data) return false;
-  var latency = Number(data.latencyMs);
-  var offset = Number(data.clockOffsetMs);
-  if (!isFinite(latency) || !isFinite(offset)) return false;
-
-  _rt.latencyMs = Math.max(0, Math.round(latency));
-  _rt.clockOffsetMs = Math.round(offset);
-  _rt.calibratedAt = typeof data.calibratedAt === 'number' ? data.calibratedAt : Date.now();
-  _rt.sampleCount = typeof data.sampleCount === 'number' ? Math.max(0, Math.round(data.sampleCount)) : 0;
-
-  updateRuntimeDisplay();
-
-  // Keep scheduler aligned to freshest calibration.
-  if (_rt.nextSaleTime > 0 && !_rt.autoFired) {
-    scheduleAutoFire(_rt.nextSaleTime);
-  }
-
-  return true;
-}
 
 function renderPrefireAuthStatus(data) {
   var authEl = document.getElementById('_auths');
@@ -108,9 +118,6 @@ function postMsg(type, payload) {
 }
 function cmdToOverlay(type) {
   window.postMessage({ __miaosha_cmd: true, type: type }, '*');
-}
-function postToOverlay(type, data) {
-  window.postMessage({ __miaosha_overlay: true, type: type, data: data }, '*');
 }
 
 // ── Product Selection State ──

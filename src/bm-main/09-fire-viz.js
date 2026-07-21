@@ -127,7 +127,7 @@ function _fv_buildHTML() {
     '>',
     '<span style="font-size:15px;display:inline-block;animation:fvFlicker .5s ease-in-out infinite alternate">🔥</span>',
     '<span style="font-size:11px;font-weight:800;color:#6366f1;letter-spacing:.1em;text-transform:uppercase;flex:1">Fire Matrix</span>',
-    '<span style="font-size:8px;font-weight:800;color:#6366f1;background:rgba(99,102,241,.1);padding:1px 6px;border-radius:999px;border:1px solid rgba(99,102,241,.2);margin-right:4px">v1.4.2</span>',
+    '<span style="font-size:8px;font-weight:800;color:#6366f1;background:rgba(99,102,241,.1);padding:1px 6px;border-radius:999px;border:1px solid rgba(99,102,241,.2);margin-right:4px">v2.0.0</span>',
     '<span id="__bm_fv_wave" style="font-size:9px;font-weight:800;color:#fff;background:#6366f1;padding:2px 7px;border-radius:999px">Wave 1</span>',
     '<span id="__bm_fv_cnt" style="font-size:9px;color:#475569;margin-right:6px">0/0 shots</span>',
     '<button id="__bm_fv_cls" style="',

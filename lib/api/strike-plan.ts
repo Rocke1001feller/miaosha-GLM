@@ -15,7 +15,6 @@ export interface StrikeShot {
   randstr: string;
   createdAt: number;
   priority: number;
-  shotIndex: number;
 }
 
 interface StrikePlan {
@@ -71,7 +70,6 @@ export function buildStrikeQueue(input: BuildStrikeQueueInput): StrikePlan {
       randstr: ticket.randstr,
       createdAt: ticket.createdAt,
       priority: target.priority,
-      shotIndex: i,
     });
   }
 

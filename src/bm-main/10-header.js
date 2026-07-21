@@ -1,8 +1,7 @@
 // ── L1 Header Injection ──
 // Injects a slim L1 information strip into bigmodel.cn page header
-// (.pc-header-nav-left) showing: physical time / latency / auth identity.
+// (.pc-header-nav-left) showing: physical time / auth identity.
 // Sources of truth:
-//   - RUNTIME_CALIBRATION message → latency dot + value
 //   - SALE_TIME_CONFIG message → target time + delta + state
 //   - local cookie/localStorage (poll 3s) → cookie/user/product status pills
 //
@@ -13,13 +12,9 @@
 var H1 = '__bm_h1';
 var H1_CSS_ID = '__bm_h1_css';
 
-// Local cached state (mirrors _rt in 02-state.js; we don't share the
-// same var because bm-main modules are concatenated into one IIFE
-// and _rt is a file-local name in 02-state.js)
+// Local cached state (we don't share _rt from 02-state.js: bm-main modules
+// are concatenated into one IIFE and _rt is a file-local name there)
 var _h1_rt = {
-  latencyMs: 0,
-  clockOffsetMs: 0,
-  calibratedAt: 0,
   nextSaleTime: 0,
   cfg: null,           // { hour, minute, second, ms, timezone }
   hasProducts: false,
@@ -83,21 +78,7 @@ function _h1_buildCSS() {
     '#' + H1 + ' .bmh-state.soon{background:#fef3c7;color:#b45309}',
     '#' + H1 + ' .bmh-state.now{background:#fee2e2;color:#b91c1c}',
     '#' + H1 + ' .bmh-state.passed{background:#f1f5f9;color:#64748b}',
-    // Latency block: single row (RTT measured from real batch-preview calls)
-    '#' + H1 + ' .bmh-lat{',
-    'display:flex;align-items:center;gap:8px;',
-    'min-width:0;flex-shrink:0;padding:2px 0',
-    '}',
-    '#' + H1 + ' .bmh-lat-label{',
-    'width:44px;flex-shrink:0;',
-    'font-size:9px;font-weight:700;',
-    'color:#94a3b8;letter-spacing:.04em;',
-    'text-transform:uppercase',
-    '}',
-    '#' + H1 + ' .bmh-lat-body{',
-    'display:flex;align-items:center;gap:6px;',
-    'flex:1;min-width:0',
-    '}',
+    // Status dot (shared by auth pills)
     '#' + H1 + ' .bmh-dot{',
     'width:8px;height:8px;border-radius:50%;',
     'background:#cbd5e1;flex-shrink:0',
@@ -106,16 +87,6 @@ function _h1_buildCSS() {
     '#' + H1 + ' .bmh-dot.ok{background:#10b981}',
     '#' + H1 + ' .bmh-dot.warn{background:#f59e0b}',
     '#' + H1 + ' .bmh-dot.fail{background:#dc2626}',
-    '#' + H1 + ' .bmh-lat-v{',
-    'font-size:12px;font-weight:700;color:#0f172a;',
-    'font-family:"SF Mono","Fira Code",Consolas,monospace;line-height:1',
-    '}',
-    '#' + H1 + ' .bmh-lat-v i{',
-    'font-style:normal;font-size:8px;color:#94a3b8;margin-left:1px',
-    '}',
-    '#' + H1 + ' #bmh-offset .bmh-lat-v{',
-    'color:#f59e0b',
-    '}',
     // Auth block: all items share equal width
     '#' + H1 + ' .bmh-auth{',
     'display:flex;align-items:center;gap:8px;',
@@ -221,22 +192,6 @@ function _h1_buildHTML() {
         '<div class="bmh-tl">Delta</div>',
         '<div class="bmh-tv" id="bmh-delta">--:--:--.---</div>',
         '<span class="bmh-state ok" id="bmh-state">pending</span>',
-      '</div>',
-    '</div>',
-    // 1.3 Latency
-    '<div class="bmh-lat" id="bmh-lat" data-tip="">',
-      '<div class="bmh-lat-label">Latency</div>',
-      '<div class="bmh-lat-body">',
-        '<div class="bmh-dot" id="bmh-lat-dot"></div>',
-        '<span class="bmh-lat-v" id="bmh-lat-v">--<i>ms</i></span>',
-      '</div>',
-    '</div>',
-    // 1.4 Clock Offset
-    '<div class="bmh-lat" id="bmh-offset" data-tip="">',
-      '<div class="bmh-lat-label">Clock Offset</div>',
-      '<div class="bmh-lat-body">',
-        '<div class="bmh-dot" id="bmh-offset-dot"></div>',
-        '<span class="bmh-lat-v" id="bmh-offset-v">--<i>ms</i></span>',
       '</div>',
     '</div>',
     // 1.1 Auth pills
@@ -362,14 +317,6 @@ function _h1_deriveState(msUntil) {
   return { text: 'passed', cls: 'passed' };
 }
 
-// ── Latency class derivation ──
-function _h1_latencyClass(ms) {
-  if (ms <= 0) return '';
-  if (ms < 80) return 'ok';
-  if (ms < 200) return 'warn';
-  return 'fail';
-}
-
 // ── Cookie / localStorage helpers ──
 function _h1_getCookieValue(name) {
   try {
@@ -476,67 +423,6 @@ function _h1_updateAuth() {
   if (loginEl) loginEl.style.display = (!hasCookie || !hasUser) ? 'inline-flex' : 'none';
 }
 
-function _h1_offsetClass(ms) {
-  var abs = Math.abs(ms);
-  if (abs <= 0) return '';
-  if (abs < 50) return 'ok';
-  if (abs < 200) return 'warn';
-  return 'fail';
-}
-
-function _h1_updateLatency() {
-  var dot = document.getElementById('bmh-lat-dot');
-  var latVal = document.getElementById('bmh-lat-v');
-  var latEl = document.getElementById('bmh-lat');
-  var offsetDot = document.getElementById('bmh-offset-dot');
-  var offsetVal = document.getElementById('bmh-offset-v');
-  var offsetEl = document.getElementById('bmh-offset');
-  if (!dot || !latVal || !latEl) return;
-
-  var notCalibrated = _h1_rt.calibratedAt <= 0;
-  var ageSec = notCalibrated ? 0 : Math.round((Date.now() - _h1_rt.calibratedAt) / 1000);
-  var offsetSign = _h1_rt.clockOffsetMs >= 0 ? '+' : '';
-  var offsetText = notCalibrated ? '--' : offsetSign + _h1_rt.clockOffsetMs;
-
-  if (notCalibrated) {
-    dot.className = 'bmh-dot';
-    latVal.innerHTML = '--<i>ms</i>';
-    latEl.setAttribute('data-tip', 'Latency not measured yet\nMeasured as median RTT of 8 POST /api/biz/pay/batch-preview probe calls (fastest 60%).');
-  } else {
-    var cls = _h1_latencyClass(_h1_rt.latencyMs);
-    dot.className = 'bmh-dot calibrated ' + cls;
-    latVal.innerHTML = _h1_rt.latencyMs + '<i>ms</i>';
-    latEl.setAttribute('data-tip',
-      'Network latency\n' +
-      'Latency: ' + _h1_rt.latencyMs + ' ms\n' +
-      'Source: ' + (_h1_rt.reason || 'batch-preview') + '\n' +
-      'Measured: ' + ageSec + ' s ago\n\n' +
-      'Method: 8 POST /api/biz/pay/batch-preview probes, 1.5 s apart. Keep fastest 60% and take median RTT.\n' +
-      'Auto-fire fires at target time − latency − 10 ms, aligned to the server clock.'
-    );
-  }
-
-  if (offsetDot && offsetVal && offsetEl) {
-    if (notCalibrated) {
-      offsetDot.className = 'bmh-dot';
-      offsetVal.innerHTML = '--<i>ms</i>';
-      offsetEl.setAttribute('data-tip', 'Clock offset not measured yet\nDifference between the server Date header and local clock, measured during the 8 batch-preview probes.');
-    } else {
-      var offCls = _h1_offsetClass(_h1_rt.clockOffsetMs);
-      offsetDot.className = 'bmh-dot calibrated ' + offCls;
-      offsetVal.innerHTML = offsetText + '<i>ms</i>';
-      offsetEl.setAttribute('data-tip',
-        'Clock offset (server − local)\n' +
-        'Offset: ' + offsetText + ' ms\n' +
-        'Source: ' + (_h1_rt.reason || 'batch-preview') + '\n' +
-        'Measured: ' + ageSec + ' s ago\n\n' +
-        'Positive = server clock is ahead of this computer; negative = server clock is behind.\n' +
-        'Auto-fire uses this offset to translate the server-targeted fire time to local time.'
-      );
-    }
-  }
-}
-
 function _h1_updateTimeTick() {
   // Local wall clock
   var now = new Date();
@@ -601,22 +487,9 @@ function _h1_handleMessage(ev) {
   if (ev.source !== window) return;
   if (!ev.data || !ev.data.__miaosha_overlay) return;
   var d = ev.data;
-  if (d.type === 'RUNTIME_CALIBRATION' && d.data) {
-    var lat = Number(d.data.latencyMs);
-    var offset = Number(d.data.clockOffsetMs);
-    if (isFinite(lat)) {
-      _h1_rt.latencyMs = Math.max(0, Math.round(lat));
-      _h1_rt.clockOffsetMs = isFinite(offset) ? Math.round(offset) : 0;
-      _h1_rt.calibratedAt = typeof d.data.calibratedAt === 'number' ? d.data.calibratedAt : Date.now();
-      _h1_rt.reason = d.data.reason || d.data.source || 'batch-preview';
-      _h1_updateLatency();
-    }
-  } else if (d.type === 'SALE_TIME_CONFIG' && d.data) {
+  if (d.type === 'SALE_TIME_CONFIG' && d.data) {
     _h1_rt.cfg = d.data.config || null;
     _h1_rt.nextSaleTime = typeof d.data.nextSaleTime === 'number' ? d.data.nextSaleTime : 0;
-  } else if (d.type === 'BATCH_PREVIEW_DATA') {
-    _h1_rt.hasProducts = Array.isArray(d.data) && d.data.length > 0;
-    _h1_updateAuth();
   }
 }
 
@@ -678,31 +551,56 @@ function _h1_injectHeader() {
   el.innerHTML = _h1_buildHTML();
   host.insertBefore(el, host.firstChild);
 
-  // Message listener
-  window.addEventListener('message', _h1_handleMessage);
-
-  // Login click handler
+  // Per-element click handlers (must re-bind after a wipe + re-injection)
   _h1_setupLoginClick();
-
-  // Options page click handler
   _h1_setupOptionsClick();
-
-  // Test Pay click handler
   _h1_setupTestPayClick();
 
   // Initial paints
   _h1_updateAuth();
-  _h1_updateLatency();
   _h1_updateTimeTick();
 
-  // Polling loops
-  setInterval(_h1_updateAuth, 3000);
-  setInterval(_h1_updateTimeTick, 100);
+  // One-time global registrations. A re-injection after an SPA wipe must
+  // NOT duplicate the message listener or the polling loops — the originals
+  // look elements up by id per tick and keep working on the new elements.
+  if (!_h1_started) {
+    _h1_started = true;
 
-  // Ask extension for sale time (overlay pattern)
-  setTimeout(function () {
-    window.postMessage({ __miaosha_cmd: true, type: 'GET_SALE_TIME' }, '*');
-  }, 800);
+    // Message listener
+    window.addEventListener('message', _h1_handleMessage);
+
+    // Polling loops
+    setInterval(_h1_updateAuth, 3000);
+    setInterval(_h1_updateTimeTick, 100);
+
+    // Ask extension for sale time (overlay pattern)
+    setTimeout(function () {
+      window.postMessage({ __miaosha_cmd: true, type: 'GET_SALE_TIME' }, '*');
+    }, 800);
+  }
 }
 
-setTimeout(_h1_injectHeader, 1500);
+// ── Injection scheduling ──
+// The mount host (.pc-header-nav-left) is rendered asynchronously by the
+// site's SPA and can appear seconds after this script runs. A one-shot
+// `setTimeout(_h1_injectHeader, 1500)` loses that race on slower loads and
+// — because _h1_injectHeader silently returns when the host is missing —
+// the bar then never appears at all. Instead: fast bounded retries until
+// the bar exists, plus a slow permanent watch so the bar is resurrected if
+// the SPA later re-renders the header and wipes it.
+var _h1_started = false;
+var H1_BOOT_DELAY_MS = 500;
+var H1_RETRY_MS = 500;
+var H1_RETRY_LIMIT = 59; // 500ms boot + 59×500ms ≈ 30s of fast retries
+var H1_WATCH_MS = 5000;
+
+function _h1_scheduleRetry(attempt) {
+  setTimeout(function () {
+    _h1_injectHeader();
+    if (document.getElementById(H1)) return;
+    if (attempt + 1 <= H1_RETRY_LIMIT) _h1_scheduleRetry(attempt + 1);
+  }, attempt === 0 ? H1_BOOT_DELAY_MS : H1_RETRY_MS);
+}
+
+_h1_scheduleRetry(0);
+setInterval(function () { _h1_injectHeader(); }, H1_WATCH_MS);

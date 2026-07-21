@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { version } from '../../../package.json';
+  import { FOOTER_TABS, type PopupTab } from '../tabs';
+
+  let { tab, ontabchange }: { tab: PopupTab; ontabchange: (t: PopupTab) => void } = $props();
 
   function openOptions() {
     chrome.runtime.openOptionsPage();
@@ -7,51 +9,68 @@
 </script>
 
 <div class="footer">
-  <div class="footer-actions">
-    <button class="fbtn" title="Settings" onclick={openOptions}>⚙</button>
+  <div class="seg" role="tablist">
+    <button class="seg-btn action" title="设置" onclick={openOptions}>设置</button>
+    {#each FOOTER_TABS as t (t.id)}
+      <button
+        class="seg-btn"
+        class:active={tab === t.id}
+        role="tab"
+        aria-selected={tab === t.id}
+        onclick={() => ontabchange(t.id)}>{t.label}</button
+      >
+    {/each}
   </div>
-  <span class="meta">v{version} · </span>
 </div>
 
 <style>
   .footer {
     flex: 0 0 auto;
-    padding: 8px 14px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    padding: 8px 12px;
     background: #ffffff;
     border-top: 1.5px solid #0c1224;
   }
 
-  .footer-actions {
+  /* 与 Topbar 的 pill-toggle 同一设计语言：等宽分段控件 */
+  .seg {
     display: flex;
-    gap: 4px;
+    width: 100%;
+    background: #fafaf7;
+    border: 1.5px solid #0c1224;
+    border-radius: 8px;
+    padding: 2px;
+    gap: 2px;
   }
 
-  .fbtn {
-    width: 26px;
-    height: 26px;
-    border: 1.5px solid #0c1224;
+  .seg-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    border: 0;
+    background: transparent;
     border-radius: 6px;
-    background: #fafaf7;
     color: #0c1224;
-    display: grid;
-    place-items: center;
-    font-size: 12px;
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 6px 0;
     cursor: pointer;
+    text-align: center;
+    white-space: nowrap;
     transition: all 0.15s;
   }
 
-  .fbtn:hover {
+  .seg-btn.active {
     background: #0c1224;
     color: #f5f3ee;
   }
 
-  .meta {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 9px;
+  /* 设置是动作按钮（打开选项页），用弱化的配色与 tab 区分，永不高亮 */
+  .seg-btn.action {
     color: #6a7496;
-    letter-spacing: 0.05em;
+  }
+
+  .seg-btn.action:hover {
+    background: #0c1224;
+    color: #f5f3ee;
   }
 </style>

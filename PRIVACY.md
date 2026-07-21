@@ -1,6 +1,6 @@
 # Privacy Policy
 
-> **智谱 Coding Plan 秒杀助手** — Chrome MV3 Browser Extension
+> **智能 Coding Plan 助手** — Chrome MV3 Browser Extension
 > Last updated: 2026-06-18
 
 This extension is provided as open-source software under the **ISC license**.

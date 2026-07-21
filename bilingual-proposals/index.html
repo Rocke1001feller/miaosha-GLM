@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>双语阅读方案脑暴 · 总览</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <span class="kicker">脑暴 · 双语阅读</span>
+    <h1>快照之后：让英文新闻「英下显中」</h1>
+    <p>现状：P3 快照模式让大陆用户能读到原文（成功率 69%），但其中大量文章是纯英文，很多用户无法顺畅阅读。
+    目标：阅读页支持双语——英文段落下方显示对应中文翻译。要求：成本低、体验快、可维护。</p>
+  </header>
+
+  <h2 class="sec">一、问题的骨架：三条决策轴</h2>
+
+  <div class="card">
+    <h3>轴 1：翻译的时机 —— 构建期 vs 阅读时</h3>
+    <p style="font-size:13.5px">
+      构建期翻译（管线里翻好存进快照）：用户打开即是双语，零等待、零客户端成本、对所有人一致；
+      代价是每次运行要为全部 443 篇付费/耗时。<strong>这与你选 P3 的哲学同源——把运行时问题变成构建时问题。</strong>
+      阅读时翻译（用户点开才翻）：只为真正被阅读的内容付出，但大陆用户调境外翻译 API 天然不稳，且每人都付一次延迟。
+    </p>
+  </div>
+
+  <div class="card">
+    <h3>轴 2：翻译的算力位置 —— Actions / 第三方云 / 用户设备</h3>
+    <p style="font-size:13.5px">
+      GitHub Actions（境外干净 IP，调 Google 翻译免费端点已被标题翻译验证可行）；第三方翻译云（DeepL/GLM/DeepSeek，要 key、要钱或限量）；
+      用户设备（Chrome 138+ 内置 Gemini Nano，离线免费但机型/版本有门槛）。算力位置决定了谁能用、稳不稳、花不花钱。
+    </p>
+  </div>
+
+  <div class="card">
+    <h3>轴 3：中英如何对齐 —— 这是排版问题不是翻译问题</h3>
+    <p style="font-size:13.5px">
+      「英文下面显示中文」要求段落级对齐。两种实现：<b>同构 DOM 双份</b>（快照存 content_html 与 content_html_zh，结构一致，阅读页并行遍历块级元素逐块对照渲染）；
+      <b>段落对数组</b>（快照存 [{en, zh}]，牺牲标题/列表等结构）。前者保真度高、实现也不复杂，是推荐契约。
+      交互上必须给三态切换：<b>双语 / 仅中文 / 仅英文</b>——双语是默认，但不是所有人都想要双倍长度。
+    </p>
+  </div>
+
+  <h2 class="sec">二、五个底层逻辑不同的方案</h2>
+
+  <table class="t">
+    <thead>
+      <tr><th style="width:34px">#</th><th>方案</th><th>底层逻辑</th><th>成本</th><th>质量</th><th>主要风险</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>B1</td>
+        <td><a href="./b1-buildtime-google.html">构建期批量预翻译（Google 免费端点）</a></td>
+        <td>扩展现有标题翻译机制到全文段落，运行时零成本</td>
+        <td><span class="tag free">免费</span></td>
+        <td>机翻，中等</td>
+        <td>443 篇/次的量可能触发限流；运行时长膨胀</td>
+      </tr>
+      <tr>
+        <td>B2</td>
+        <td><a href="./b2-runtime-scroll.html">阅读时滚动懒翻译（公共端点）</a></td>
+        <td>只翻被读到的段落，滚动到哪翻到哪</td>
+        <td><span class="tag free">免费</span></td>
+        <td>机翻，中等</td>
+        <td>大陆调境外翻译端点不稳；首段就有延迟</td>
+      </tr>
+      <tr>
+        <td>B3</td>
+        <td><a href="./b3-ondevice-nano.html">端侧模型翻译（Chrome 内置 AI）</a></td>
+        <td>翻译算力在用户设备上，离线、免费、隐私</td>
+        <td><span class="tag free">免费</span></td>
+        <td>小模型，中等偏上</td>
+        <td>Chrome 版本/机型门槛；首次需下载模型</td>
+      </tr>
+      <tr>
+        <td>B4</td>
+        <td><a href="./b4-buildtime-llm.html">构建期 LLM 精翻（自有 API key）</a></td>
+        <td>管线用 GLM/DeepSeek 等 LLM 产出同构双语 DOM</td>
+        <td><span class="tag mid">≈0 到极低</span></td>
+        <td><b>最好</b></td>
+        <td>需管理 key 与成本；prompt 需保结构</td>
+      </tr>
+      <tr>
+        <td>B5</td>
+        <td><a href="./b5-progressive-router.html">渐进揭示式多源路由</a></td>
+        <td>不是翻译源，是编排框架：多源择优 + 按需揭示</td>
+        <td><span class="tag free">视路由</span></td>
+        <td>取决于源</td>
+        <td>复杂度最高；需要前两期沉淀后再做</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2 class="sec">三、横向对比关键维度</h2>
+  <table class="t">
+    <thead><tr><th>维度</th><th>B1 构建期 Google</th><th>B2 滚动懒翻译</th><th>B3 端侧 Nano</th><th>B4 构建期 LLM</th><th>B5 多源路由</th></tr></thead>
+    <tbody>
+      <tr><th>用户打开即双语</th><td>✔</td><td>✘（滚动才出现）</td><td>≈（段落级快速）</td><td>✔</td><td>✔（有缓存时）</td></tr>
+      <tr><th>大陆用户网络依赖</th><td>无（内容已含译文）</td><td><b>高（致命）</b></td><td>无</td><td>无</td><td>低</td></tr>
+      <tr><th>翻译质量</th><td>机翻</td><td>机翻</td><td>机翻+</td><td><b>LLM 精翻</b></td><td>取最优源</td></tr>
+      <tr><th>管线改动量</th><td>中（复用现有机制）</td><td>零</td><td>零</td><td>中（新增 LLM 步骤）</td><td>大</td></tr>
+      <tr><th>运行时长增量/次</th><td>大（443 篇全文）</td><td>0</td><td>0</td><td>中（LLM 并发好）</td><td>—</td></tr>
+      <tr><th>成本/月</th><td>0</td><td>0</td><td>0</td><td>0–几元（Flash 免费档）</td><td>视路由</td></tr>
+      <tr><th>契约改动</th><td>快照 + content_html_zh</td><td>无</td><td>无</td><td>快照 + content_html_zh</td><td>多源字段</td></tr>
+    </tbody>
+  </table>
+
+  <div class="verdict">
+    <h2>最终实施建议</h2>
+    <ol>
+      <li><strong>主线：B4（构建期 LLM 精翻）。</strong>与 P3 同构——快照步骤里对 content_html 的文本节点逐段调 LLM（GLM-4.5-Flash 免费档起步，key 放 GitHub secrets），产出同构 <code>content_html_zh</code> 进快照契约；reader 页并行渲染「英段 + 灰显中段」，顶栏三态切换（双语/仅中/仅英）。所有用户打开即双语，不依赖其浏览器与网络。</li>
+      <li><strong>兜底：B3（端侧 Nano）二期再做。</strong>对没有译文的条目（快照失败、7d 旧文）提供「在本地翻译」按钮——有 Nano 用 Nano，没有则隐藏。不动数据契约，纯增量。</li>
+      <li><strong>不选 B1/B2 的原因</strong>：B1 全量机翻的运行时长与限流风险高且质量一般；B2 依赖大陆用户直连境外翻译端点，恰好在最需要翻译的人群身上最不稳。</li>
+      <li><strong>B5 暂缓</strong>：多源路由是 B4+B3 都上线后的自然演化，不值得现在付复杂度。</li>
+    </ol>
+    <p>质量增强建议（B4 内建）：prompt 里附 AI 新闻术语表（agent=智能体、vibe coding 保留原文等），并要求跳过 &lt;pre&gt;/&lt;code&gt; 内文本。</p>
+  </div>
+
+  <footer>双语阅读方案脑暴 · 2026-07-19 · 所有页面完全离线可预览</footer>
+
+</div>
+</body>
+</html>

@@ -5,53 +5,56 @@
     { id: 'R2', feature: '验证码预取（Tencent CAPTCHA ticket 池）', carrier: 'bm-capture + bm-main', color: '#8b5cf6' },
     { id: 'R3', feature: 'bigmodel.cn 标签页内视觉 + 音频提醒', carrier: 'bm-capture', color: '#06b6d4' },
     { id: 'R4', feature: '扩展图标角标倒计时', carrier: 'Background SW', color: '#f59e0b' },
-    { id: 'DEV', feature: 'API 调试面板（直接调用 bigmodel API）', carrier: 'Popup DEV', color: '#10b981' },
-    { id: 'PROD', feature: '秒杀操作面板（一键开火、支付轮询）', carrier: 'Popup PROD', color: '#ef4444' },
+    { id: 'NEWS', feature: 'AI 聚合新闻阅读（读取 rocke1001feller.github.io 静态 JSON）', carrier: 'Popup「AI 新闻」面板', color: '#10b981' },
+    { id: 'PROD', feature: '平台秒杀入口导航 + 各平台额度用量视图', carrier: 'Popup「抢购秒杀 / Token 用量」面板', color: '#ef4444' },
   ];
 
   /* ── §03 Entrypoints ── */
   const ENTRYPOINTS = [
-    { icon: '⚙️', file: 'background.ts', title: '后台 Service Worker', role: 'SW', detail: 'R1（system notifications）+ R4（badge）。alarms.onAlarm 必须顶层注册。', bullets: ['读取 saleTimeConfig 计算下次秒杀', '调度 60/30/15/5 提醒并同步 badge', '浏览器关闭后靠 chrome.alarms 恢复'] },
-    { icon: '🔒', file: 'bm-capture.content.ts', title: 'Content Script (ISOLATED)', role: 'ISOLATED', detail: '负责 R2、R3 与 Auth 捕获，通过 postMessage 与 bm-main 互通。', bullets: ['接收 MAIN world 的 ticket / UI 事件', '写入 storage + 批量 fetch', 'sale time 自动开火调度'] },
-    { icon: '🚀', file: 'popup/', title: 'Popup DEV / PROD', role: 'POPUP', detail: 'Svelte 5 应用，DEV 调试 / PROD 秒杀。', bullets: ['Topbar 切换运行模式', 'DevContent API 卡片测试', 'ProdContent 开火 + 支付轮询'] },
-    { icon: '📖', file: 'options/', title: '选项页 + 文档', role: 'OPTIONS', detail: 'saleTimeConfig 配置 + README 架构说明。', bullets: ['时间 / 时区 / 提醒校正', '验证码批量录入限制', '工作原理 + 软件架构文档'] },
+    { icon: '⚙️', file: 'background.ts', title: '后台 Service Worker', role: 'SW', detail: 'R1（系统通知）+ R4（badge）+ 支付新标签。alarms.onAlarm 必须顶层注册。', bullets: ['读取 saleTimeConfig 计算下次秒杀', '调度 60/30/15/10/5 提醒并同步 badge', 'OPEN_PAY_TAB：新标签打开收银台', 'BIGMODEL_REQUEST 代理（拒绝代理 batch-preview）', 'USAGE_FETCH：抓取各平台额度用量'] },
+    { icon: '🔒', file: 'bm-capture.content.ts', title: 'Content Script (ISOLATED)', role: 'ISOLATED', detail: '负责 R2、R3、Auth 捕获与开火编排（smart-fire-plan 状态机）。', bullets: ['接收 MAIN world 的 ticket / STOCK_FLIP / UI 事件', '票仓读写 page sessionStorage', 'preview 经 MAIN world 中继发送，预算 ≤8 发'] },
+    { icon: '🚀', file: 'popup/', title: 'Popup 多面板', role: 'POPUP', detail: 'Svelte 5 应用，单一激活 tab：header（AI 新闻 / Token 用量）+ footer（设置 / 买家秀 / 秒杀 / 拼团转让）互斥切换。', bullets: ['tabs.ts 定义 PopupTab 与按钮元数据', 'NewsContent 聚合新闻阅读', 'UsageView 各平台额度用量（默认面板）', 'PlaceholderPanel 买家秀 / 拼团占位'] },
+    { icon: '📖', file: 'options/', title: '选项页 + 文档', role: 'OPTIONS', detail: 'saleTime / 验证码上限 / Strike Interval 配置 + 文档。', bullets: ['时间 / 时区 / 提醒声音', '验证码批量录入上限', '工作原理 + 软件架构文档'] },
   ];
 
   /* ── §05 Auth ── */
   const AUTH_STEPS = [
-    { label: 'captureFromTab()', desc: '在 MAIN world 调用 extractAuthFromPage()' },
-    { label: 'document.cookie', desc: '读取 JWT (authorization header)' },
-    { label: 'localStorage', desc: '读取 bigmodelOrganization + bigmodelProject' },
-    { label: 'local:authHeaders', desc: '写回 storage，popup 打开时刷新' },
+    { label: 'authProbe.capture()', desc: '开火前在 ISOLATED world 实时捕获' },
+    { label: 'document.cookie', desc: '读取 bigmodel_token_production (JWT)' },
+    { label: 'localStorage', desc: '读取 Bigmodel-Organization + Bigmodel-Project' },
+    { label: 'local:platformAuth', desc: '写入 storage 作为缓存兜底' },
   ];
   /* ── §06 Ticket ── */
   const TICKET_ACQ = [
     { label: 'Tencent CAPTCHA', desc: '拦截成功响应 → ticket + randstr' },
     { label: 'postMessage', desc: 'MAIN world → ISOLATED world' },
-    { label: 'page sessionStorage', desc: 'bm-capture 写入 __bm_tickets' },
+    { label: 'page sessionStorage', desc: '__bm_tickets，TTL 300s，最新优先' },
   ];
   const TICKET_USE = [
-    { label: 'read pool', desc: 'bm-capture 读取 page sessionStorage 中的 tickets' },
-    { label: 'build plan', desc: 'buildStrikeQueue 按优先级分配' },
-    { label: 'fire', desc: '顺序单线程 /api/biz/pay/preview 请求' },
+    { label: 'smart-fire-plan', desc: '状态机：预算 8 发、串行 ≥2100ms、405 即停' },
+    { label: 'PAGE_FETCH_REQUEST', desc: 'preview 经 MAIN world 中继发送' },
+    { label: '555 / soldout 不核销', desc: '未售出时同一张票可继续复用' },
   ];
 
   /* ── §07 Storage ── */
   const STORAGE = [
-    { key: 'local:authHeaders', type: 'AuthHeaders', writers: ['bm-capture', 'authStore'], readers: ['popup', 'bm-capture'] },
-    { key: 'page sessionStorage (__bm_tickets)', type: 'Ticket[]', writers: ['bm-capture'], readers: ['bm-capture'] },
+    { key: 'local:platformAuth', type: 'PlatformAuth', writers: ['bm-capture'], readers: ['bm-capture'] },
+    { key: 'page sessionStorage (__bm_tickets)', type: 'Ticket[]', writers: ['bm-capture', 'bm-main'], readers: ['bm-capture', 'bm-main'] },
     { key: 'local:saleTimeConfig', type: 'SaleTimeConfig', writers: ['options'], readers: ['background', 'bm-capture'] },
-    { key: 'local:devMode', type: 'dev | prod', writers: ['popup'], readers: ['popup'] },
+    { key: 'local:fireConfig', type: 'FireConfig', writers: ['options', 'bm-capture'], readers: ['bm-capture'] },
+    { key: 'local:captchaConfig', type: 'CaptchaConfig', writers: ['options'], readers: ['bm-capture'] },
+    { key: 'local:newsCache', type: 'NewsCacheEntry', writers: ['popup'], readers: ['popup'] },
+    { key: 'local:usageCache', type: 'UsageCache', writers: ['background'], readers: ['popup'] },
     { key: 'local:selectedProducts', type: 'priorityList[]', writers: ['bm-main'], readers: ['bm-capture'] },
   ];
-  const STORAGE_ACTORS = ['bm-capture', 'bm-main', 'popup', 'background', 'options', 'authStore'];
+  const STORAGE_ACTORS = ['bm-capture', 'bm-main', 'popup', 'background', 'options'];
 
   /* ── §04 代理步骤 ── */
   const PROXY_STEPS = [
-    { num: 1, title: '定位 Tab', desc: '找到已打开的 bigmodel.cn 标签页', icon: '🔍' },
-    { num: 2, title: '注入脚本', desc: 'executeScript → MAIN world', icon: '💉' },
-    { num: 3, title: '同源请求', desc: '以 bigmodel.cn 身份 fetch', icon: '🌐' },
-    { num: 4, title: '返回结果', desc: 'results[0].result → bodyText', icon: '✅' },
+    { num: 1, title: '发起请求', desc: 'ISOLATED 组织 preview / create-sign 参数', icon: '📦' },
+    { num: 2, title: '跨世界投递', desc: 'postMessage PAGE_FETCH_REQUEST', icon: '💉' },
+    { num: 3, title: '同源执行', desc: 'MAIN world 用页面 window.fetch 发送', icon: '🌐' },
+    { num: 4, title: '回传结果', desc: 'PAGE_FETCH_RESPONSE 带回 status / headers / body', icon: '✅' },
   ];
 
   /* ── §08 bm-main ── */
@@ -60,24 +63,29 @@
 
   /* ── §09 决策 ── */
   const DECISIONS = [
-    { id: 'D1', title: 'MAIN world + executeScript', detail: 'background / ISOLATED fetch 暴露 chrome-extension:// origin → 空 body。只有 MAIN world 能保住同源身份。', accent: '#f59e0b' },
-    { id: 'D2', title: 'bm-main.js 是静态文件', detail: '复杂 UI + XHR 拦截不适合 executeScript 字面量。静态脚本注入后自由使用 DOM API。', accent: '#8b5cf6' },
-    { id: 'D3', title: 'Ticket 池必须带 TTL', detail: 'CAPTCHA ticket ~5 分钟失效。TTL 自动清理保证池中只留有效弹药。', accent: '#ef4444' },
-    { id: 'D4', title: 'Auth 每次打开 popup 刷新', detail: 'JWT / org / project 可能变化。主动 capture 避免过期认证。', accent: '#06b6d4' },
+    { id: 'D1', title: '关键请求走 MAIN world', detail: 'batch-preview 从 extension origin 会被 Alibaba WAF 直接拦截；preview / create-sign 也统一走 MAIN world window.fetch 中继，让请求指纹与官方页面完全一致。', accent: '#f59e0b' },
+    { id: 'D2', title: 'bm-main.js 是构建拼接的静态文件', detail: 'src/bm-main/*.js 由 scripts/build-overlay.js 按序拼接，经 web_accessible_resources 注入页面，自由使用 DOM 与页面运行时。', accent: '#8b5cf6' },
+    { id: 'D3', title: '票仓 TTL 300s 且售出才核销', detail: 'ticket 300 秒过期；soldOut / 555 不核销，只有锁单成功才消耗。池子按 createdAt 排序，永远先用最新的一张。', accent: '#ef4444' },
+    { id: 'D4', title: 'preview 预算制（WAF 405 自保）', detail: 'preview 累计约 15 发即被 WAF 封锁 30-60 分钟。smart-fire-plan 每场预算 8 发、串行 ≥2100ms、收到 405 立即停火。', accent: '#06b6d4' },
+    { id: 'D5', title: 'ALI 跳过原生弹窗直连收银台', detail: '官方桌面端 create-sign 只用于渲染 AES 二维码；手机端直连链路无客户端门禁。preview 成功后 ALI 直接 create-sign 拿收银台 URL 新标签打开，失败回退原生弹窗。', accent: '#10b981' },
+    { id: 'D6', title: 'Auth 开火前实时捕获', detail: 'JWT / org / project 可能变化；每次开火前从页面 cookie + localStorage 重新 capture，local:platformAuth 只做缓存兜底。', accent: '#6366f1' },
   ];
 
-  const AUTH_SHAPE = `interface AuthHeaders {\n  authorization: string;\n  bigmodelOrganization: string;\n  bigmodelProject: string;\n}`;
+  const AUTH_SHAPE = `interface BigmodelAuthHeaders {\n  authorization: string;\n  'bigmodel-organization': string;\n  'bigmodel-project': string;\n}`;
   const TICKET_SHAPE = `interface Ticket {\n  ticket: string;\n  randstr: string;\n  createdAt: number;\n}`;
   const DIR_TREE = `/entrypoints/
 ├── background.ts          # Service worker
 ├── bm-capture.content.ts  # Content script (ISOLATED)
+├── bm-early.content.ts    # document_start 早期注入
 ├── popup/                 # Svelte 5 popup
 └── options/               # Svelte 5 选项页 + 文档
 /lib/api/
-├── client.ts · auth-store.ts
-├── fire-plan.ts · types.ts
-└── catalog.ts
-/public/bm-main.js         # MAIN world 注入
+├── smart-fire-plan.ts     # 开火状态机（纯函数）
+├── strike-plan.ts         # 手动/BURST 加权轮询队列
+/lib/platform/adapters/bigmodel/
+├── auth-probe.ts · order-pipeline.ts · request.ts
+/src/bm-main/              # MAIN world 源文件
+/public/bm-main.js         # build-overlay 拼接产物
 /output/chrome-mv3/         # 构建输出`;
 </script>
 
@@ -87,13 +95,13 @@
       <span class="accent-bar" style="background:linear-gradient(180deg,var(--violet),var(--primary));box-shadow:0 0 14px rgba(99,102,241,0.35)"></span>
       <h3>软件架构</h3>
     </div>
-    <p class="section-note">architecture.md 的网页版摘要。整体架构、入口点、同源代理、auth 与 ticket 系统。</p>
+    <p class="section-note">当前代码库的真实架构摘要：四大组件、MAIN world 中继、auth 与 ticket 系统、存储矩阵。</p>
 
     <div class="arch-panel">
       <!-- ═══ HERO ═══ -->
       <div class="hero">
         <span class="badge">ARCHITECTURE</span>
-        <h4>智谱秒杀助手 — 代码库架构与基本原理</h4>
+        <h4>智能Coding Plan助手 — 代码库架构与基本原理</h4>
         <p>构建工具 WXT 0.20.26 · Vite · TypeScript · Svelte 5 · Chrome MV3</p>
         <div class="pills">
           <span class="pill">WXT 0.20.26</span>
@@ -159,16 +167,16 @@
           <!-- Popup -->
           <div class="ab-component ab-popup">
             <div class="ab-icon">🚀</div>
-            <div class="ab-title">Popup DEV / PROD</div>
-            <div class="ab-desc">Svelte 5 · 双模式</div>
-            <div class="ab-tags"><span class="ab-tag ab-tag-green">DEV</span><span class="ab-tag ab-tag-red">PROD</span></div>
+            <div class="ab-title">Popup 多面板</div>
+            <div class="ab-desc">Svelte 5 · 互斥 tab</div>
+            <div class="ab-tags"><span class="ab-tag ab-tag-green">AI 新闻</span><span class="ab-tag ab-tag-green">Token 用量</span><span class="ab-tag ab-tag-red">抢购秒杀</span></div>
           </div>
           <!-- Storage Bus -->
           <div class="ab-storage-bus">
             <div class="ab-bus-icon">📦</div>
             <div class="ab-bus-title">chrome.storage.local</div>
             <div class="ab-bus-keys">
-              <span>authHeaders</span><span>ticketPool</span><span>saleTimeConfig</span><span>devMode</span><span>selectedProducts</span>
+              <span>platformAuth</span><span>saleTimeConfig</span><span>fireConfig</span><span>captchaConfig</span><span>selectedProducts</span><span>newsCache</span><span>usageCache</span>
             </div>
           </div>
           <!-- Arrows to bus -->
@@ -199,7 +207,7 @@
 
       <!-- ═══ §04 同源代理 — 流程图 ═══ -->
       <section class="sec">
-        <div class="sec-head"><span class="sec-idx">04</span><div><h5>核心机制：同源请求代理</h5><p>bigmodel.cn 拒绝 chrome-extension:// origin → 必须把 fetch 注入页面 MAIN world。</p></div></div>
+        <div class="sec-head"><span class="sec-idx">04</span><div><h5>核心机制：MAIN world 请求中继</h5><p>extension origin 的请求会被 Alibaba WAF 区别对待（batch-preview 直接拦截）；关键请求一律在页面 MAIN world 里用 window.fetch 发送。</p></div></div>
         <div class="flow-strip">
           {#each PROXY_STEPS as s, i}
             <div class="flow-step">
@@ -214,9 +222,10 @@
           {/each}
         </div>
         <div class="flow-note">
-          <span class="flow-note-badge">权限</span>
-          <code>permissions: scripting, tabs</code>
-          <code>host_permissions: *://*.bigmodel.cn/*</code>
+          <span class="flow-note-badge">规则</span>
+          <code>batch-preview：只允许 MAIN world</code>
+          <code>preview / create-sign：MAIN world 中继</code>
+          <code>其余端点：background BIGMODEL_REQUEST 代理</code>
         </div>
       </section>
 
@@ -359,8 +368,9 @@
             <div class="panel-header panel-header-green">
               <span class="panel-icon">⚡</span><h6>常用命令</h6>
             </div>
-            <pre class="doc-code">npm run dev      # HMR 开发模式
-npm run build    # 生产构建 → output/chrome-mv3/</pre>
+            <pre class="doc-code">node scripts/build-overlay.js   # 拼接 MAIN world 脚本
+pnpm dev                        # HMR 开发模式
+pnpm build                      # build-overlay + wxt build + 校验</pre>
           </div>
         </div>
       </section>

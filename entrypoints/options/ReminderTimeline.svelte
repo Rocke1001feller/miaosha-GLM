@@ -33,7 +33,7 @@
       banner: '🔥 距智谱秒杀还有 60 分钟',
       bannerButton: '立即准备',
       sound: '880Hz 蜂鸣 ×1',
-      effects: ['刷新 batch-preview 缓存', '点击打开 popup'],
+      effects: ['系统通知', 'Badge 角标', '点击通知打开 popup'],
     },
     30: {
       label: 'T-30m',
@@ -45,7 +45,7 @@
       banner: '🔥 距智谱秒杀还有 30 分钟',
       bannerButton: '立即准备',
       sound: '880Hz 蜂鸣 ×1',
-      effects: ['刷新 batch-preview 缓存', '点击打开 popup'],
+      effects: ['系统通知', 'Badge 角标', '点击通知打开 popup'],
     },
     15: {
       label: 'T-15m',
@@ -57,7 +57,7 @@
       banner: '🔥 距智谱秒杀还有 15 分钟',
       bannerButton: '立即准备',
       sound: '880Hz 蜂鸣 ×1',
-      effects: ['刷新 batch-preview 缓存', '点击打开 popup'],
+      effects: ['系统通知', 'Badge 角标', '点击通知打开 popup'],
     },
     10: {
       label: 'T-10m',
@@ -69,7 +69,7 @@
       banner: '🔥 距智谱秒杀还有 10 分钟',
       bannerButton: '立即准备',
       sound: '880Hz 蜂鸣 ×3',
-      effects: ['刷新 batch-preview 缓存', '点击打开 popup'],
+      effects: ['系统通知', 'Badge 角标', '点击通知打开 popup'],
     },
     5: {
       label: 'T-5m',
@@ -81,7 +81,7 @@
       banner: '🔥 距智谱秒杀还有 5 分钟！请立刻录入验证码，越多越好',
       bannerButton: '去录入验证码',
       sound: '880Hz 蜂鸣 ×4',
-      effects: ['刷新 batch-preview 缓存', '点击打开 popup'],
+      effects: ['系统通知', 'Badge 角标', '点击通知打开 popup'],
     },
   };
 

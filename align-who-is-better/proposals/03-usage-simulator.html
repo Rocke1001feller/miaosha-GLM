@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>方案 03 · 用量模拟计算器 — AI 编程套餐横评</title>
+<style>
+  :root{
+    --bg:#0c1120; --bg2:#0a0e1a;
+    --panel:#141b2e; --panel2:#182136; --inset:#0b101d;
+    --line:#283450; --line2:#1e2840;
+    --ink:#e9eefb; --ink2:#9fabcc; --ink3:#68759a;
+    --cyan:#3fd2f2; --green:#43d68a; --amber:#f2b53f; --red:#ff5d5d;
+    --vx:#ff8a3d; --vm:#4f9cf2; --vg:#3fce8e; --vk:#a88bf0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{background:var(--bg2)}
+  body{
+    background:
+      radial-gradient(1100px 500px at 85% -80px, rgba(63,210,242,.07), transparent 60%),
+      radial-gradient(900px 460px at 8% -60px, rgba(168,139,240,.06), transparent 60%),
+      var(--bg);
+    color:var(--ink);
+    font:15px/1.75 "PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    padding:34px 20px 70px;
+  }
+  .page{max-width:1160px;margin:0 auto}
+  .num,.fx,code{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-feature-settings:"tnum"}
+  h1,h2,h3{font-weight:700;letter-spacing:.5px}
+
+  /* ── 横幅 ── */
+  .banner{
+    border:1px solid var(--line);border-radius:14px;
+    background:linear-gradient(180deg,rgba(63,210,242,.06),rgba(63,210,242,0) 42%),var(--panel);
+    box-shadow:0 0 0 1px rgba(63,210,242,.08),0 18px 50px rgba(0,0,0,.35);
+    padding:30px 34px 24px;position:relative;overflow:hidden;
+  }
+  .banner:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(180deg,var(--cyan),transparent)}
+  .kicker{font-size:12px;letter-spacing:4px;color:var(--cyan);font-weight:700}
+  .banner h1{font-size:32px;margin:8px 0 12px}
+  .banner h1 .pno{
+    font-family:ui-monospace,Menlo,monospace;font-size:15px;color:var(--cyan);
+    border:1px solid rgba(63,210,242,.45);border-radius:6px;padding:3px 10px;margin-right:12px;
+    vertical-align:6px;background:rgba(63,210,242,.08);letter-spacing:1px;
+  }
+  .banner .logic{font-size:16.5px;color:var(--ink);border-left:3px solid var(--cyan);padding-left:14px}
+  .banner .logic b{color:var(--cyan)}
+  .banner .purpose{margin-top:10px;color:var(--ink2);font-size:13px}
+  .banner .bmeta{display:flex;flex-wrap:wrap;gap:10px 26px;margin-top:16px;align-items:center}
+  .snap{font-size:12px;color:var(--ink3);letter-spacing:1px}
+  .snap b{color:var(--ink2)}
+
+  /* ── 来源标签 ── */
+  .tag{display:inline-block;font-size:11px;line-height:1.6;padding:0 7px;border-radius:4px;letter-spacing:.5px;white-space:nowrap;vertical-align:1px}
+  .tag.mkt{background:rgba(255,138,61,.13);color:#ffab73;border:1px solid rgba(255,138,61,.45)}
+  .tag.doc{background:rgba(79,156,242,.13);color:#8dbef7;border:1px solid rgba(79,156,242,.45)}
+  .tag.tp{background:rgba(242,181,63,.13);color:#f2cd7a;border:1px solid rgba(242,181,63,.45)}
+  .tag.as{background:transparent;color:#8b97b8;border:1px dashed #55648a}
+  .tag.off{background:rgba(155,171,204,.08);color:#8b97b8;border:1px solid #33405f}
+  .legend{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:12px;color:var(--ink2);align-items:center}
+
+  /* ── 区块 ── */
+  section{margin-top:36px}
+  .sec-head{display:flex;align-items:baseline;gap:12px;border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:18px}
+  .sec-no{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#06121c;background:var(--cyan);border-radius:4px;padding:2px 9px;font-weight:700;letter-spacing:1px}
+  .sec-head h2{font-size:20px}
+  .sec-head .sub{color:var(--ink2);font-size:12.5px;margin-left:auto;text-align:right}
+
+  /* ── A · 输入控制台 ── */
+  .deck{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:14px;
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.03),0 14px 40px rgba(0,0,0,.3);
+  }
+  .ctl{background:var(--inset);border:1px solid var(--line2);border-radius:10px;padding:16px 16px 14px;position:relative}
+  .ctl .k{font-size:12.5px;color:var(--ink2);letter-spacing:1px;display:flex;justify-content:space-between;align-items:baseline}
+  .ctl .v{font-family:ui-monospace,Menlo,monospace;font-size:24px;font-weight:700;color:var(--cyan);margin:6px 0 10px}
+  .ctl .v small{font-size:12px;color:var(--ink3);font-weight:400;margin-left:4px}
+  .ctl .hint{font-size:11.5px;color:var(--ink3);line-height:1.5;margin-top:8px;min-height:34px}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:22px;background:transparent;cursor:pointer}
+  input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px;
+    background:linear-gradient(90deg,var(--cyan) var(--fill,50%),#26314e var(--fill,50%))}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+    background:#0c1120;border:3px solid var(--cyan);margin-top:-6px;box-shadow:0 0 10px rgba(63,210,242,.55)}
+  input[type=range]::-moz-range-track{height:6px;border-radius:3px;background:#26314e}
+  input[type=range]::-moz-range-progress{height:6px;border-radius:3px;background:var(--cyan)}
+  input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:#0c1120;border:3px solid var(--cyan)}
+  .seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-top:2px}
+  .seg button{flex:1;padding:9px 4px;background:transparent;color:var(--ink2);border:0;cursor:pointer;font:inherit;font-size:13.5px;transition:background .15s}
+  .seg button.on{background:var(--cyan);color:#06121c;font-weight:700}
+  .seg button:not(.on):hover{background:rgba(63,210,242,.08)}
+
+  /* ── B · 厂商仿真面板 ── */
+  .vendor{
+    --vc:#43d68a;
+    border:1px solid var(--line);border-radius:14px;background:var(--panel);
+    margin-bottom:18px;overflow:hidden;transition:border-color .2s,box-shadow .2s;
+  }
+  .vendor.alert{border-color:rgba(255,93,93,.6);box-shadow:0 0 0 1px rgba(255,93,93,.28),0 0 34px rgba(255,93,93,.10)}
+  .v-head{display:flex;align-items:center;gap:12px;padding:15px 22px;border-bottom:1px solid var(--line2);
+    background:linear-gradient(90deg,color-mix(in srgb,var(--vc) 10%,transparent),transparent 55%)}
+  .v-dot{width:12px;height:12px;border-radius:3px;background:var(--vc);box-shadow:0 0 10px var(--vc);flex:none}
+  .v-name{font-size:17px;font-weight:700}
+  .v-name small{color:var(--ink2);font-weight:400;font-size:12.5px;margin-left:8px}
+  .v-tier{margin-left:auto;text-align:right;font-size:12.5px;color:var(--ink2);line-height:1.5}
+  .v-tier b{color:var(--ink);font-size:14px}
+  .badge{display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:1px;border-radius:5px;padding:2px 10px;margin-left:10px;vertical-align:2px}
+  .badge.ok{background:rgba(67,214,138,.13);color:#6fe3a6;border:1px solid rgba(67,214,138,.45)}
+  .badge.alert{background:rgba(255,93,93,.16);color:#ff8f8f;border:1px solid rgba(255,93,93,.55);animation:pulse 1.6s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+  .v-chips{display:flex;flex-wrap:wrap;gap:6px 14px;padding:10px 22px;border-bottom:1px solid var(--line2);font-size:12px;color:var(--ink3);background:rgba(0,0,0,.15)}
+  .chip b{color:var(--ink2);font-weight:600}
+  .chip .on{color:var(--green)} .chip .off2{color:var(--ink3)}
+  .v-cards{display:grid;grid-template-columns:1.05fr 1.35fr 1fr;gap:0}
+  .v-card{padding:16px 22px 18px;border-right:1px solid var(--line2)}
+  .v-card:last-child{border-right:0}
+  .v-card .ck{font-size:12px;color:var(--ink2);letter-spacing:1.5px;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+  .v-card .big{font-family:ui-monospace,Menlo,monospace;font-size:30px;font-weight:700;line-height:1.15}
+  .v-card .big small{font-size:12.5px;color:var(--ink2);font-weight:400;margin-left:6px}
+  .big.ok{color:var(--green)} .big.bad{color:var(--red)} .big.neu{color:var(--ink)}
+  .v-card .sub1{font-size:12.5px;color:var(--ink2);margin-top:4px}
+  .mini-fx{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--ink3);margin-top:8px;line-height:1.7;word-break:break-all}
+
+  /* 供需条 */
+  .sd{margin-top:12px}
+  .sd-track{position:relative;height:8px;border-radius:4px;background:#232f4d;overflow:hidden}
+  .sd-fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
+  .sd-lbl{font-size:11.5px;color:var(--ink3);margin-top:5px}
+
+  /* 30 日时间轴 */
+  .tl{display:flex;gap:2px;margin-top:10px}
+  .tl i{flex:1;height:24px;border-radius:2.5px;background:#232f4d;transition:background .15s}
+  .tl i.wsep{margin-left:7px}
+  .tl i.ok{background:var(--vc);opacity:.8}
+  .tl i.out{background:repeating-linear-gradient(45deg,#6b2230 0 3px,#451623 3px 6px)}
+  .tl-scale{display:flex;justify-content:space-between;font-size:10.5px;color:var(--ink3);margin-top:4px;font-family:ui-monospace,Menlo,monospace}
+  .tl-note{font-size:12px;color:var(--ink2);margin-top:8px;line-height:1.6}
+  .tl-note b{color:var(--red)}
+
+  /* 限制说明 */
+  .limits{list-style:none}
+  .limits li{font-size:12.5px;color:var(--ink2);line-height:1.65;padding:6px 0 6px 14px;position:relative;border-bottom:1px dashed var(--line2)}
+  .limits li:last-child{border-bottom:0}
+  .limits li:before{content:"▸";position:absolute;left:0;color:var(--vc)}
+  .limits .tag{margin-left:6px}
+
+  /* ── C · 规则面板 ── */
+  .rule-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .rule-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+  .rule-card h3{font-size:15px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+  .rule-card h3 .rdot{width:9px;height:9px;border-radius:2px;flex:none}
+  .fx{font-size:12px;background:var(--inset);border:1px solid var(--line2);border-radius:8px;
+    padding:11px 14px;color:#c6d2ef;line-height:2;overflow-x:auto;white-space:pre-wrap;word-break:break-all}
+  .fx b{color:var(--cyan);font-weight:600}
+  .fx .cm{color:var(--ink3)}
+  .assume{margin-top:10px;font-size:12.5px;color:var(--ink2);line-height:1.7}
+  .assume .tag{margin-right:6px}
+  .std-card{grid-column:1/-1;background:linear-gradient(90deg,rgba(63,210,242,.05),transparent 60%),var(--panel)}
+  .std-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 0}
+  .std-cell{background:var(--inset);border:1px solid var(--line2);border-radius:8px;padding:10px 14px;text-align:center}
+  .std-cell .k{font-size:11.5px;color:var(--ink3)}
+  .std-cell .v{font-family:ui-monospace,Menlo,monospace;font-size:19px;font-weight:700;color:var(--cyan);margin-top:2px}
+  .std-cell .v small{font-size:11px;color:var(--ink2);font-weight:400}
+
+  table.scope{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}
+  table.scope th,table.scope td{border:1px solid var(--line2);padding:7px 10px;text-align:center}
+  table.scope th{background:var(--inset);color:var(--ink2);font-weight:600;font-size:12px}
+  table.scope td:first-child{text-align:left;color:var(--ink2)}
+  .sc-y{color:var(--green);font-weight:700} .sc-n{color:var(--ink3)}
+
+  /* ── E · 设计逻辑 ── */
+  .design{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .d-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+  .d-card h3{font-size:14.5px;color:var(--cyan);margin-bottom:8px;letter-spacing:1px}
+  .d-card p,.d-card li{font-size:13px;color:var(--ink2);line-height:1.8}
+  .d-card ul{padding-left:18px}
+  footer{margin-top:30px;border-top:1px solid var(--line);padding-top:16px;font-size:12px;color:var(--ink3);line-height:1.9}
+  footer b{color:var(--ink2)}
+
+  @media (max-width:980px){
+    .deck{grid-template-columns:1fr 1fr}
+    .v-cards{grid-template-columns:1fr}
+    .v-card{border-right:0;border-bottom:1px solid var(--line2)}
+    .rule-grid,.design{grid-template-columns:1fr}
+    .std-grid{grid-template-columns:1fr 1fr}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ═══════════ 方案横幅 ═══════════ -->
+  <header class="banner">
+    <div class="kicker">AI 编程套餐横评 · 设计原型</div>
+    <h1><span class="pno">方案 03</span>用量模拟计算器</h1>
+    <p class="logic">底层逻辑：以「你的用量模型」为中心 —— 数据变成参数化规则，答案是<b>算出来</b>的，而不是查出来的。</p>
+    <p class="purpose" id="meta-purpose"></p>
+    <div class="bmeta">
+      <span class="snap">数据快照 <b id="snap-date"></b> ｜ 口径：中档套餐 · 30 天月制</span>
+      <span class="legend">
+        <span><span class="tag mkt">营销页</span>话术</span>
+        <span><span class="tag doc">文档页</span>条款</span>
+        <span><span class="tag tp">第三方</span>实测/报道</span>
+        <span><span class="tag as">推算假设</span>本页公开</span>
+        <span><span class="tag off">厂商口径</span>未标注来源字段</span>
+      </span>
+    </div>
+  </header>
+
+  <!-- ═══════════ A · 输入区 ═══════════ -->
+  <section id="sec-input">
+    <div class="sec-head"><span class="sec-no">A</span><h2>输入 · 你的用量画像</h2><span class="sub">拖动滑块，下方仿真实时重算</span></div>
+    <div class="deck">
+      <div class="ctl">
+        <div class="k">每日任务轮数</div>
+        <div class="v"><span id="v-daily">30</span><small>轮/日</small></div>
+        <input type="range" id="in-daily" min="1" max="100" step="1" value="30">
+        <div class="hint">1 轮 = 1 标准任务轮（定义见 C 区）。30 轮 ≈ 全职高强度；5 轮 ≈ 轻度辅助。</div>
+      </div>
+      <div class="ctl">
+        <div class="k">缓存命中率</div>
+        <div class="v"><span id="v-hit">75</span><small>%</small></div>
+        <input type="range" id="in-hit" min="0" max="95" step="5" value="75">
+        <div class="hint">仅影响按 token/Credits 计量的厂商（小米/MiniMax）；按次计费者不省钱。</div>
+      </div>
+      <div class="ctl">
+        <div class="k">高峰时段使用占比</div>
+        <div class="v"><span id="v-peak">50</span><small>%</small></div>
+        <input type="range" id="in-peak" min="0" max="100" step="5" value="50">
+        <div class="hint">智谱 14:00–18:00 高峰 3x 惩罚；小米反向：非高峰 0.8x 奖励。</div>
+      </div>
+      <div class="ctl">
+        <div class="k">模型偏好</div>
+        <div class="v" id="v-model" style="font-size:17px;padding-top:4px">旗舰优先</div>
+        <div class="seg">
+          <button id="m-flag" class="on">旗舰优先</button>
+          <button id="m-bal">均衡</button>
+        </div>
+        <div class="hint" id="model-hint">小米→mimo-v2.5-pro；智谱→GLM-5.2（高峰 3x）。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ B · 输出区 ═══════════ -->
+  <section id="sec-out">
+    <div class="sec-head"><span class="sec-no">B</span><h2>输出 · 四家中档套餐仿真</h2><span class="sub">任一日产出缺口 → 面板变红警示「月中断供」（规则 d）</span></div>
+    <div id="results"></div>
+  </section>
+
+  <!-- ═══════════ C · 规则全公开 ═══════════ -->
+  <section id="sec-rules">
+    <div class="sec-head"><span class="sec-no">C</span><h2>规则全公开 · 公式与假设</h2><span class="sub">所有折算均可复算；营销/文档/第三方分层标注</span></div>
+    <div class="rule-grid" id="rules"></div>
+  </section>
+
+  <!-- ═══════════ E · 设计逻辑与取舍 ═══════════ -->
+  <section id="sec-design">
+    <div class="sec-head"><span class="sec-no">E</span><h2>本方案设计逻辑与取舍</h2></div>
+    <div class="design">
+      <div class="d-card">
+        <h3>为什么选「用量模拟」这个维度</h3>
+        <p>套餐价格是固定的，套餐价值却是个人的 —— 同一档套餐，对日均 10 轮与日均 80 轮的人是两种产品。查表式横评回答「面值多少」，只有模拟器能回答「我的用法能撑多久、哪天断供」。各厂的时段系数、窗口闸、单位折算，本质都是可执行的规则，因此把数据参数化、让答案被计算而非被查阅。</p>
+      </div>
+      <div class="d-card">
+        <h3>优势</h3>
+        <ul>
+          <li>公式与假设 100% 公开（C 区），每个数字可手工复算；</li>
+          <li>营销话术、文档条款、第三方实测、本页推算四层信息全程分色标注，永不混写；</li>
+          <li>「月中断供」红色警示把风险从条款文字变成一眼可见的日期；</li>
+          <li>参数作用域矩阵诚实呈现：哪些滑块对哪家根本不起作用。</li>
+        </ul>
+      </div>
+      <div class="d-card">
+        <h3>局限</h3>
+        <ul>
+          <li>假设日用量均匀、月度按 30 天制、周窗口按 ×30/7 折算，均为简化；</li>
+          <li>MiniMax 的 5h/周窗口数值未公开，短期爆发力无法建模；</li>
+          <li>Kimi 绝对额度官方从未公布，只能锚定第三方实测，且共享月池存在连坐不确定性；</li>
+          <li>标准任务轮的 token 构成是自定义假设，与真实任务形态可能有数倍偏差。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div>数据快照日期：<b id="foot-date"></b> ｜ 本页全部事实数据来自 <b>shared/data.js（PLAN_BATTLE_DATA）</b>，折算公式见 C 区，页面自身不持有任何未标注来源的数字。</div>
+    <div id="foot-disclaimer"></div>
+  </footer>
+</div>
+
+<script src="./shared/data.js"></script>
+<script>
+(function(){
+'use strict';
+var D = window.PLAN_BATTLE_DATA;
+if(!D){ document.getElementById('results').innerHTML = '<p style="color:#ff5d5d">未找到 PLAN_BATTLE_DATA，请确认 shared/data.js 存在。</p>'; return; }
+
+/* ─────────── 0. 从数据模型中提取仿真参数（失败回退到数据文件同值常量） ─────────── */
+function num(re, str, fb){ var m = String(str).match(re); return m ? parseFloat(String(m[1]).replace(/,/g,'')) : fb; }
+function yi(str, fb){ return num(/([\d.]+)\s*亿/, str, fb) * 1e8; }
+
+var ST = D.standardTask; // 标准任务轮：输入 200K / 输出 15K / 基准缓存命中 75%
+var V = {};
+D.vendors.forEach(function(v){ V[v.id] = v; });
+
+var P_X = (function(){ // 小米 Standard（中档 = tiers[1]）
+  var t = V['xiaomi-mimo'].tiers[1], mr = V['xiaomi-mimo'].metering.modelRates;
+  var off = num(/([\d.]+)\s*x/, (V['xiaomi-mimo'].marketing.filter(function(m){return /0\.8x/.test(m.claim);})[0]||{}).claim, 0.8);
+  return { tier:t, credits: yi(t.quota, 110e8), pro: mr[0], std: mr[1], offpeak: off };
+})();
+var P_M = (function(){ // MiniMax Max（中档 = tiers[1]）
+  var t = V['minimax'].tiers[1];
+  return { tier:t, tokens: yi(t.quota, 18e8),
+           perCall: num(/([\d.]+)\s*K\s*token/i, V['minimax'].computed.rows[0].costPerRound, 50) * 1000 };
+})();
+var P_G = (function(){ // 智谱 Pro（中档 = tiers[1]）
+  var t = V['zhipu-glm'].tiers[1], note = V['zhipu-glm'].metering.modelRates[0].note;
+  return { tier:t, week: num(/([\d,]+)\s*\/\s*周/, t.quota, 2000),
+           fiveH: num(/(\d+)\s*prompts\s*\/\s*5h/, t.quota, 400),
+           peakX: num(/高峰\s*(\d+)\s*x/, note, 3),
+           offNow: num(/非高峰\s*(\d+)\s*x\s*限时福利/, note, 1),
+           offLater: num(/非高峰\s*(\d+)\s*x\s*扣额度/, note, 2) };
+})();
+var P_K = (function(){ // Kimi Moderato（中档 = tiers[1]）
+  var t = V['kimi'].tiers[1];
+  return { tier:t, week: num(/≈\s*([\d,]+)\s*次\/周/, V['kimi'].computed.rows[0].monthlyRounds, 2500) };
+})();
+
+var COLOR = {'xiaomi-mimo':'#ff8a3d','minimax':'#4f9cf2','zhipu-glm':'#3fce8e','kimi':'#a88bf0'};
+var DAYS = 30, WEEKS = DAYS/7;
+
+/* ─────────── 1. 输入状态 ─────────── */
+var S = { daily:30, hit:0.75, peak:0.5, flagship:true };
+
+/* ─────────── 2. 仿真内核（规则与 C 区公式一一对应） ─────────── */
+function simulate(){
+  var h = S.hit, p = S.peak;
+  var billableStd = ST.inputTokens*(1-ST.cacheHitRate) + ST.outputTokens; // 65,000：第三方 50K/轮 的锚定口径
+  var billableUsr = ST.inputTokens*(1-h) + ST.outputTokens;
+
+  /* 小米：Credits 公式 × 时段系数（非高峰 0.8x 奖励） */
+  var xr = S.flagship ? P_X.pro : P_X.std;
+  var xPer = (ST.inputTokens*(1-h)*xr.inputCacheMiss + ST.inputTokens*h*xr.inputCacheHit + ST.outputTokens*xr.output)
+             * (p*1 + (1-p)*P_X.offpeak);
+  var xMonthly = P_X.credits / xPer;
+
+  /* MiniMax：第三方 50K/轮 按账单 token 等比缩放（推算假设，见 C 区） */
+  var mPer = P_M.perCall * billableUsr / billableStd;
+  var mMonthly = P_M.tokens / mPer;
+
+  /* 智谱：prompts 公式（旗舰 GLM-5.2 高峰 3x / 限时非高峰 1x；均衡 GLM-4.7 恒 1x） */
+  var gMulti = S.flagship ? (p*P_G.peakX + (1-p)*P_G.offNow) : 1;
+  var gWeekly = P_G.week / gMulti;
+  var gMonthly = gWeekly * WEEKS;
+
+  /* Kimi：第三方实测锚定 2500 次/周，h/p 不作用于计数额度 */
+  var kWeekly = P_K.week;
+  var kMonthly = kWeekly * WEEKS;
+
+  return [
+    { id:'xiaomi-mimo', monthly:xMonthly, perLabel:(xPer/1e6).toFixed(2)+'M Credits/轮',
+      model: S.flagship?'mimo-v2.5-pro（旗舰）':'mimo-v2.5（全模态）',
+      pool:'monthly', weekly:null,
+      hOn:true, pOn:true, mOn:true },
+    { id:'minimax', monthly:mMonthly, perLabel:(mPer/1000).toFixed(1)+'K token/轮',
+      model:'MiniMax-M3（旗舰，同池无分档）',
+      pool:'monthly', weekly:null,
+      hOn:true, pOn:false, mOn:false },
+    { id:'zhipu-glm', monthly:gMonthly, perLabel:gMulti.toFixed(2)+' prompts/轮',
+      model: S.flagship?'GLM-5.2（旗舰）':'GLM-4.7（均衡）',
+      pool:'weekly', weekly:gWeekly, fiveH: Math.floor(P_G.fiveH/gMulti),
+      hOn:false, pOn:S.flagship, mOn:true },
+    { id:'kimi', monthly:kMonthly, perLabel:'按次计（绝对量未公开）',
+      model:'kimi-for-coding（K2.7 Code）',
+      pool:'weekly', weekly:kWeekly,
+      hOn:false, pOn:false, mOn:false }
+  ];
+}
+
+/* 30 日覆盖：月池按累计消耗；周窗口按每周独立结算 */
+function coverage(r){
+  var days = [], d, diw;
+  if(r.pool === 'monthly'){
+    for(d=1; d<=DAYS; d++) days.push(d*S.daily <= r.monthly + 1e-9);
+  }else{
+    for(d=1; d<=DAYS; d++){ diw = ((d-1)%7)+1; days.push(diw*S.daily <= r.weekly + 1e-9); }
+  }
+  return days;
+}
+
+/* ─────────── 3. 渲染 ─────────── */
+function fmt(n){ return Math.floor(n).toLocaleString('en-US'); }
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+
+function chip(label, on, onTxt, offTxt){
+  return '<span class="chip">'+label+'：<b class="'+(on?'on':'off2')+'">'+(on?onTxt:offTxt)+'</b></span>';
+}
+
+function timeline(days, firstOut){
+  var html = '<div class="tl">';
+  for(var i=0;i<DAYS;i++){
+    html += '<i class="'+((i+1)%7===1 && i>0 ? 'wsep ' : '')+(days[i]?'ok':'out')+'" title="第 '+(i+1)+' 日：'+(days[i]?'可供':'断供')+'"></i>';
+  }
+  html += '</div><div class="tl-scale"><span>D1</span><span>D7</span><span>D14</span><span>D21</span><span>D28</span><span>D30</span></div>';
+  return html;
+}
+
+function limitsFor(r){
+  var li = [];
+  if(r.id==='xiaomi-mimo'){
+    li.push({t:'非高峰 0.8x 奖励已计入：时段系数 = p×1 + (1−p)×0.8，夜间用得越多越省', tag:'doc', tagTxt:'营销页+文档页'});
+    li.push({t:'6 款套餐模型并行消耗同一 Credit 池，非独立额度', tag:'doc', tagTxt:'文档页'});
+    li.push({t:'额度耗尽即停服、不扣余额；无日/周用量闸，属总量流量包', tag:'off', tagTxt:'厂商口径'});
+  }else if(r.id==='minimax'){
+    li.push({t:'月额度之外还有 5h 窗口 + 周窗口，数值未公开 —— 短期爆发力无法建模，实际可能早于下图耗尽', tag:'doc', tagTxt:'文档页'});
+    li.push({t:'工作日 15:00–17:30 高峰按集群负载动态限流'+(S.peak>=0.6?'；当前高峰占比偏高，体验折损风险大':''), tag:'doc', tagTxt:'文档页'});
+    li.push({t:'超限后约 1 分钟恢复；耗尽可走积分补扣/升级/按量', tag:'off', tagTxt:'厂商口径'});
+  }else if(r.id==='zhipu-glm'){
+    li.push({t:S.flagship
+      ? ('旗舰 GLM-5.2：高峰（14:00–18:00）3x 扣、非高峰限时 1x（2026-09 底后恢复 2x，同等订阅可用量减半）')
+      : '均衡 GLM-4.7：全天 1x，不受高峰占比影响', tag:'doc', tagTxt:'文档页'});
+    li.push({t:'5h 窗口上限折算 ≈'+r.fiveH+' 轮/窗口（400 prompts ÷ 每轮消耗），单日集中爆发另受此闸', tag:'doc', tagTxt:'文档页'});
+    li.push({t:'额度耗尽硬停止等窗口恢复，不扣余额、不降级模型', tag:'off', tagTxt:'厂商口径'});
+  }else{
+    li.push({t:'周额度 ≈2500 次/周系第三方实测推算（k2.5 时代 Andante≈639 次/周 ×4 档），官方从未公布绝对量', tag:'tp', tagTxt:'第三方'});
+    li.push({t:'Kimi Code 与 Agent/PPT 共享月度池，月池打满则连坐冻结 —— 实际可用 ≤ 本页推算值', tag:'doc', tagTxt:'文档页'});
+    li.push({t:'5h 滚动窗口 300–1200 次（仅给区间）；工作日 14:00–17:00 可能 429 过载', tag:'off', tagTxt:'厂商口径'});
+  }
+  return li.map(function(b){
+    return '<li>'+esc(b.t)+'<span class="tag '+b.tag+'">'+b.tagTxt+'</span></li>';
+  }).join('');
+}
+
+function render(){
+  var res = simulate();
+  var demand = S.daily * DAYS;
+  var html = '';
+  res.forEach(function(r){
+    var v = V[r.id], tier = v.tiers[1];
+    var days = coverage(r);
+    var firstOut = null;
+    for(var i=0;i<DAYS;i++){ if(!days[i]){ firstOut = i+1; break; } }
+    var alert = firstOut !== null;
+    var monthly = Math.floor(r.monthly);
+    var coverPct = Math.min(100, r.monthly/demand*100);
+    var gap = demand - monthly;
+
+    html += '<div class="vendor'+(alert?' alert':'')+'" style="--vc:'+COLOR[r.id]+'">'
+      + '<div class="v-head"><span class="v-dot"></span>'
+      + '<span class="v-name">'+esc(v.company)+' · '+esc(v.name)+'<small>'+esc(r.model)+'</small></span>'
+      + '<span class="badge '+(alert?'alert':'ok')+'">'+(alert?'⚠ 月中断供':'✓ 全月可撑')+'</span>'
+      + '<span class="v-tier"><b>'+esc(tier.name)+'</b>（中档） ¥'+esc(tier.monthlyCny)+'/月<br>'+esc(tier.quota)+'</span>'
+      + '</div>'
+      + '<div class="v-chips">'
+      +   chip('缓存命中率', r.hOn, '生效', '不生效 · 按次计费')
+      +   chip('高峰占比', r.pOn, '生效', '无扣费系数 · 仅风险提示')
+      +   chip('模型偏好', r.mOn, '生效', '单一计费模型')
+      + '</div>'
+      + '<div class="v-cards">'
+
+      /* 卡 1：月可用轮数 */
+      + '<div class="v-card"><div class="ck">月可用轮数 <span class="tag as">推算假设</span></div>'
+      + '<div class="big '+(alert?'bad':'ok')+'">≈'+fmt(r.monthly)+'<small>轮/30天</small></div>'
+      + '<div class="sub1">每轮成本：<span class="num">'+r.perLabel+'</span></div>'
+      + '<div class="sd"><div class="sd-track"><div class="sd-fill" style="width:'+coverPct.toFixed(1)+'%;background:'+(alert?'var(--red)':'var(--vc)')+'"></div></div>'
+      + '<div class="sd-lbl">月需求 '+fmt(demand)+' 轮 · 供给覆盖 '+(coverPct>=100?'100%+（余 '+fmt(-gap)+' 轮）':coverPct.toFixed(0)+'%（缺 '+fmt(gap)+' 轮）')+'</div></div>'
+      + '</div>'
+
+      /* 卡 2：耗尽日 + 30 日时间轴 */
+      + '<div class="v-card"><div class="ck">额度预计耗尽日 · 30 日时间轴</div>'
+      + '<div class="big '+(alert?'bad':'ok')+'">'+(alert?('D'+firstOut):'—')+'<small>'+(alert?'第 '+firstOut+' 日起断供':'月底不断供')+'</small></div>'
+      + timeline(days, firstOut)
+      + '<div class="tl-note">'
+      + (r.pool==='weekly'
+          ? ('周窗口 ≈'+fmt(r.weekly)+' 轮/周（月等价 ≈'+fmt(r.monthly)+' 轮，×30/7 折算）；'
+             + (alert ? '每周第 <b>'+firstOut+'</b> 天起等刷新，红色格循环出现' : '周用量 '+fmt(S.daily*7)+' 轮 ≤ 周额度，窗口内可循环'))
+          : (alert ? '月池按日均 '+S.daily+' 轮匀速消耗，第 <b>'+firstOut+'</b> 日见底' : '月池结余至月底'))
+      + '</div></div>'
+
+      /* 卡 3：限制说明 */
+      + '<div class="v-card"><div class="ck">限制说明（各厂规则）</div><ul class="limits">'+limitsFor(r)+'</ul></div>'
+
+      + '</div></div>';
+  });
+  document.getElementById('results').innerHTML = html;
+}
+
+/* ─────────── 4. C 区：规则全公开 ─────────── */
+function renderRules(){
+  var h = 'h', p = 'p';
+  var html = '';
+
+  /* 标准任务轮 */
+  html += '<div class="rule-card std-card"><h3>度量基准 · 标准任务轮 <span class="tag as">推算假设</span></h3>'
+    + '<div class="std-grid">'
+    + '<div class="std-cell"><div class="k">定义</div><div class="v" style="font-size:13px">'+esc(ST.definition)+'</div></div>'
+    + '<div class="std-cell"><div class="k">输入 token</div><div class="v">200K</div></div>'
+    + '<div class="std-cell"><div class="k">输出 token</div><div class="v">15K</div></div>'
+    + '<div class="std-cell"><div class="k">基准缓存命中</div><div class="v">75%</div></div>'
+    + '</div><div class="assume"><span class="tag as">推算假设</span>'+esc(ST.note)+' 全局约定：30 天月制、日用量均匀、周窗口按 ×30/7 折算月等价。</div></div>';
+
+  /* 小米 */
+  html += '<div class="rule-card"><h3><span class="rdot" style="background:var(--vx)"></span>小米 Standard · Credits 公式</h3>'
+    + '<div class="fx">每轮 Credits = [ 200K×(1−'+h+')×miss率 + 200K×'+h+'×hit率 + 15K×out率 ] × [ '+p+'×1 + (1−'+p+')×0.8 ]\n'
+    + '  旗舰 pro：miss 300 / hit 2.5 / out 600 <span class="cm">（文档页 modelRates）</span>\n'
+    + '  均衡 2.5 ：miss 100 / hit 2 / out 200\n'
+    + '月轮数 = 110亿 Credits ÷ 每轮 Credits\n'
+    + '校验：h=75%, p=0 旗舰 → 24.38M/轮 → ≈451 轮/月 <span class="cm">（与数据 computed 一致）</span></div>'
+    + '<div class="assume"><span class="tag as">推算假设</span>'+esc(V['xiaomi-mimo'].computed.assumption)+'。0.8x 非高峰系数来源：<span class="tag mkt">营销页</span><span class="tag doc">文档页</span></div></div>';
+
+  /* MiniMax */
+  html += '<div class="rule-card"><h3><span class="rdot" style="background:var(--vm)"></span>MiniMax Max · token 公式</h3>'
+    + '<div class="fx">每轮 token = 50K × [ 200K×(1−'+h+') + 15K ] ÷ 65K\n'
+    + '月轮数 = 18亿 token ÷ 每轮 token\n'
+    + '<span class="cm">65K = 标准任务轮 75% 命中时的账单 token（200K×25%+15K）</span></div>'
+    + '<div class="assume"><span class="tag tp">第三方</span>'+esc(V['minimax'].computed.assumption)+'<br>'
+    + '<span class="tag as">推算假设</span>50K/轮 锚定 75% 命中口径，按账单 token 等比缩放；5h/周窗口数值未公开，不参与计算。</div></div>';
+
+  /* 智谱 */
+  html += '<div class="rule-card"><h3><span class="rdot" style="background:var(--vg)"></span>智谱 Pro · prompts 公式</h3>'
+    + '<div class="fx">每轮 prompts = '+p+'×3 + (1−'+p+')×1  <span class="cm">旗舰 GLM-5.2，限时福利期非高峰 1x</span>\n'
+    + '           = 1             <span class="cm">均衡 GLM-4.7，全天 1x</span>\n'
+    + '周轮数 = 2000 ÷ 每轮 prompts；月 ≈ 周 × 30/7\n'
+    + '5h 爆发上限 = 400 ÷ 每轮 prompts（轮/窗口）\n'
+    + '校验：全高峰 → ≈667 轮/周 <span class="cm">（与数据 computed 一致）</span></div>'
+    + '<div class="assume"><span class="tag doc">文档页</span>'+esc(V['zhipu-glm'].computed.assumption)+'；高峰 14:00–18:00 3x、非高峰 2x，2026-09 底前非高峰 1x 限时福利（本页按福利期计算）。</div></div>';
+
+  /* Kimi */
+  html += '<div class="rule-card"><h3><span class="rdot" style="background:var(--vk)"></span>Kimi Moderato · 第三方锚定</h3>'
+    + '<div class="fx">周轮数 ≈ 2500 <span class="cm">（Andante 639 次/周 × 4× 档，第三方实测推算）</span>\n'
+    + '月 ≈ 周 × 30/7 ≈ 10,714；h / p 均不作用于计数额度\n'
+    + '<span class="cm">不确定性：与 Agent/PPT 共享月度池，月满连坐冻结 → 实际值 ≤ 推算值</span></div>'
+    + '<div class="assume"><span class="tag tp">第三方</span>'+esc(V['kimi'].computed.assumption)+'（k2.5 时代 Andante(1×) ≈639 次/周）<br>'
+    + '<span class="tag doc">文档页</span>高速版额度消耗约 3 倍，仅 Allegretto 及以上可用，中档 Moderato 不涉及。</div></div>';
+
+  /* 参数作用域矩阵 */
+  html += '<div class="rule-card std-card"><h3>参数作用域矩阵 · 哪些滑块对哪家真的起作用</h3>'
+    + '<table class="scope"><tr><th>参数 ＼ 厂商（中档）</th><th>小米 Standard</th><th>MiniMax Max</th><th>智谱 Pro</th><th>Kimi Moderato</th></tr>'
+    + '<tr><td>每日任务轮数</td><td class="sc-y">✓</td><td class="sc-y">✓</td><td class="sc-y">✓</td><td class="sc-y">✓</td></tr>'
+    + '<tr><td>缓存命中率</td><td class="sc-y">✓ Credits 公式</td><td class="sc-y">✓ 缩放公式</td><td class="sc-n">— 按次计费</td><td class="sc-n">— 按次计费</td></tr>'
+    + '<tr><td>高峰时段占比</td><td class="sc-y">✓ 0.8x 奖励</td><td class="sc-n">— 仅限流提示</td><td class="sc-y">✓ 3x 惩罚（旗舰）</td><td class="sc-n">— 仅 429 提示</td></tr>'
+    + '<tr><td>模型偏好</td><td class="sc-y">✓ pro / 2.5</td><td class="sc-n">— 同池无分档</td><td class="sc-y">✓ 5.2 / 4.7</td><td class="sc-n">— 单一计费模型</td></tr>'
+    + '</table></div>';
+
+  document.getElementById('rules').innerHTML = html;
+}
+
+/* ─────────── 5. 绑定与初始化 ─────────── */
+function bindRange(id, key, scale, labelId, fmtFn){
+  var el = document.getElementById(id);
+  function upd(){
+    var val = +el.value;
+    S[key] = val * scale;
+    document.getElementById(labelId).textContent = val;
+    el.style.setProperty('--fill', ((val - el.min)/(el.max - el.min)*100)+'%');
+    render();
+  }
+  el.addEventListener('input', upd);
+  upd();
+}
+document.getElementById('meta-purpose').textContent = '横评目的：' + D.meta.purpose;
+document.getElementById('snap-date').textContent = D.meta.generatedAt;
+document.getElementById('foot-date').textContent = D.meta.generatedAt;
+document.getElementById('foot-disclaimer').textContent = '免责说明：' + D.meta.disclaimer;
+
+bindRange('in-daily','daily',1,'v-daily');
+bindRange('in-hit','hit',0.01,'v-hit');
+bindRange('in-peak','peak',0.01,'v-peak');
+
+var mf = document.getElementById('m-flag'), mb = document.getElementById('m-bal');
+function setModel(flag){
+  S.flagship = flag;
+  mf.className = flag?'on':''; mb.className = flag?'':'on';
+  document.getElementById('v-model').textContent = flag?'旗舰优先':'均衡';
+  document.getElementById('model-hint').textContent = flag
+    ? '小米→mimo-v2.5-pro；智谱→GLM-5.2（高峰 3x）。'
+    : '小米→mimo-v2.5（约 2.9 倍便宜）；智谱→GLM-4.7（全天 1x）。';
+  render();
+}
+mf.addEventListener('click', function(){ setModel(true); });
+mb.addEventListener('click', function(){ setModel(false); });
+
+renderRules();
+render();
+})();
+</script>
+</body>
+</html>

@@ -1,10 +1,8 @@
-import type { IObservableStore } from '../../types';
-
 /**
  * In-memory observable store for surfaces that cannot access chrome.storage,
  * primarily the MAIN world overlay scripts.
  */
-export class MemoryStore<T> implements IObservableStore<T> {
+export class MemoryStore<T> {
   protected value: T | null = null;
   private readonly listeners = new Set<(value: T | null) => void>();
 

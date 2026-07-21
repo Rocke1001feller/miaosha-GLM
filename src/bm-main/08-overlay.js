@@ -3,7 +3,7 @@ function buildHTML() {
   return '<style>' + CSS + '</style>' +
 
     // Header
-    '<div class="h"><span>&#128736;</span><h3>智谱秒杀助手</h3><span class="ver">v1.4.2</span><button class="opts" id="_opts" title="Open options">&#9881;</button><button class="mn" id="_mn">&#8722;</button></div>' +
+    '<div class="h"><span>&#128736;</span><h3>智能Coding Plan助手</h3><span class="ver">v2.0.0</span><button class="opts" id="_opts" title="Open options">&#9881;</button><button class="mn" id="_mn">&#8722;</button></div>' +
     '<div class="b" id="_bd">' +
 
     // Card 1: Preparations
@@ -39,10 +39,9 @@ function buildHTML() {
     '<div class="ch"><span class="ct">&#128293; Fire</span><span class="tg tg-r">LAUNCH</span></div>' +
     '<div class="fm" id="_meter"></div>' +
     '<div id="_fireCfg"></div>' +
-    '<div class="fc-row"><span class="fc-lbl">Strike Interval<span class="fc-tip" data-tip="串行模式（Strike / FIRE 串行）下每枪之间的间隔（毫秒）。BURST 按钮固定 200ms，不受此项影响。智谱后端使用 2 秒滑动窗口限流（阈值=1），低于 2 秒会触发大量 555。实测 2100ms 是单用户最优节奏。">?</span></span><input class="fc-num" id="_fireBurstInterval" type="number" min="500" max="10000" step="100" value="2100"></div>' +
+    '<div class="fc-row"><span class="fc-lbl">Strike Interval<span class="fc-tip" data-tip="串行模式下每枪之间的间隔（毫秒）。智谱后端使用 2 秒滑动窗口限流（阈值=1），低于 2 秒会触发大量 555。实测 2100ms 是单用户最优节奏，已强制下限 2100ms。">?</span></span><input class="fc-num" id="_fireBurstInterval" type="number" min="2100" max="10000" step="100" value="2100"></div>' +
     '<div class="fc-row"><span class="fc-lbl">Pay<span class="fc-tip" data-tip="create-sign 使用的支付方式，决定打开支付宝还是微信支付。推荐：ALI（Alipay）。">?</span></span><select class="fc-sel" id="_firePayType"><option value="ALI">Alipay</option><option value="WE_CHAT">WeChat</option></select></div>' +
-    '<button class="fb" id="_fb" disabled title="串行模式（Strike）：按上方 Burst Interval 顺序发射，遇到 555 自动退避，节奏稳。">&#9889; FIRE 串行 (0)</button>' +
-    '<button class="fbb" id="_fbb" disabled title="并发模式（Burst）：固定 200ms 间隔快速齐射，忽略 555 退避，火力密度高，适合秒杀窗口内火力压制。">&#9889; BURST 并发 (0) · 200ms</button>' +
+    '<button class="fb" id="_fb" disabled title="串行模式（FIRE）：按上方 Strike Interval 顺序发射，遇到 555 自动等待，节奏稳。">&#9889; FIRE 串行 (0)</button>' +
     '<div style="font-size:8px;color:#64748b;text-align:center;padding:3px 0" id="_ammo"></div>' +
     '<div style="font-size:8px;color:#94a3b8;text-align:center;padding:2px 0" id="_auths">Auth: pending</div>' +
     '<div style="font-size:8px;color:#94a3b8;text-align:center;padding:2px 0" id="_auto">Auto: waiting…</div>' +
@@ -105,7 +104,7 @@ function readFireConfigFromControls() {
   var payType = document.getElementById('_firePayType');
   return {
     ...(_fireConfig || { burstIntervalMs: 2100, payType: 'ALI' }),
-    burstIntervalMs: Math.max(500, Math.min(10000, Math.round(Number(burstInterval ? burstInterval.value : 2100)) || 2100)),
+    burstIntervalMs: Math.max(2100, Math.min(10000, Math.round(Number(burstInterval ? burstInterval.value : 2100)) || 2100)),
     payType: payType && payType.value === 'WE_CHAT' ? 'WE_CHAT' : 'ALI',
   };
 }
@@ -169,18 +168,6 @@ function injectOverlay() {
       renderCaptchaMeter();
     }
 
-    if (d.type === 'RUNTIME_CALIBRATION' && d.data) {
-      applyRuntimeCalibration(d.data);
-    }
-
-    if (d.type === 'SOLDOUT_CLEARED' && d.data && Array.isArray(d.data.clearedIds) && d.data.clearedIds.length > 0) {
-      _priorityList = d.data.clearedIds.slice(0, 3).map(function(id) { return { productId: id }; });
-      persistSelection();
-      renderProducts();
-      syncSelectionStatus();
-      window.postMessage({ __miaosha_cmd: true, type: 'PREFIRE_FIRE', data: { startMs: Date.now(), reason: 'soldout-cleared' } }, '*');
-    }
-
     if (d.type === 'FIRE_CONFIG' && d.data) {
       _fireConfig = d.data;
       applyFireConfigToControls(d.data);
@@ -213,9 +200,6 @@ function injectOverlay() {
   document.getElementById('_ab').addEventListener('click', function() { toggleBatchMode(); });
   document.getElementById('_fb').addEventListener('click', function() {
     window.postMessage({ __miaosha_cmd: true, type: 'PREFIRE_FIRE', data: { startMs: Date.now(), reason: 'manual' } }, '*');
-  });
-  document.getElementById('_fbb').addEventListener('click', function() {
-    window.postMessage({ __miaosha_cmd: true, type: 'PREFIRE_FIRE', data: { startMs: Date.now(), reason: 'burst' } }, '*');
   });
 
   document.getElementById('_mn').addEventListener('click', function() {
@@ -303,20 +287,10 @@ function injectOverlay() {
   checkRealState();
   setInterval(checkRealState, 3000);
 
-  setTimeout(poll, 200);
   setTimeout(function() { cmdToOverlay('GET_SALE_TIME'); }, 800);
   setTimeout(function() { cmdToOverlay('GET_FIRE_CONFIG'); }, 1000);
-  setTimeout(function() { cmdToOverlay('GET_RUNTIME_CALIBRATION'); }, 1200);
 
   setTimeout(setupProductUI, 300);
 }
 
 setTimeout(injectOverlay, 1500);
-
-// ── Message Listener ──
-window.addEventListener('message', function(ev) {
-  if (ev.source !== window) return;
-  if (ev.data?.__miaosha_cmd) {
-    if (ev.data.type === 'PRODUCE_CAPTCHA') produceCaptcha();
-  }
-});

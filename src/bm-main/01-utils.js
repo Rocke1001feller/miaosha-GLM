@@ -36,3 +36,27 @@ function getRenewLabel(billing) {
   if (billing === 'quarterly') return '下个季度续费金额';
   return '下个月续费金额';
 }
+
+function getLocalAuthHeaders() {
+  try {
+    var jwt = '';
+    var cookies = document.cookie.split(';');
+    for (var i = 0; i < cookies.length; i++) {
+      var part = cookies[i].trim();
+      if (part.indexOf('bigmodel_token_production=') === 0) {
+        jwt = part.substring('bigmodel_token_production='.length);
+        break;
+      }
+    }
+    var org = localStorage.getItem('Bigmodel-Organization');
+    var proj = localStorage.getItem('Bigmodel-Project');
+    if (!jwt || !org || !proj) return null;
+    return {
+      authorization: jwt.indexOf('Bearer ') === 0 ? jwt : 'Bearer ' + jwt,
+      bigmodelOrganization: org,
+      bigmodelProject: proj
+    };
+  } catch(e) {
+    return null;
+  }
+}

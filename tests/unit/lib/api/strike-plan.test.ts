@@ -97,7 +97,6 @@ describe('buildStrikeQueue', () => {
       randstr: 'rsB',
       createdAt: 200,
       priority: 1,
-      shotIndex: 0,
     });
     expect(plan.shots[1]).toEqual({
       productId: 'p1',
@@ -105,7 +104,6 @@ describe('buildStrikeQueue', () => {
       randstr: 'rsA',
       createdAt: 100,
       priority: 1,
-      shotIndex: 1,
     });
   });
 });

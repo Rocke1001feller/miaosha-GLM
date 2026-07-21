@@ -1,17 +1,16 @@
 // MAIN-world script injected by bm-early.content.ts at document_start.
-// 1. Saves a reference to the page's original fetch/XHR before the page's Sentry
-//    SDK instruments them. The overlay later uses these references to call
-//    /api/biz/pay/batch-preview without triggering Alibaba WAF 405 blocks.
-// 2. Wraps fetch (and guards window.fetch with a getter/setter) to capture the
-//    page's own successful /api/biz/pay/batch-preview response. The page's JS
-//    already has to fetch this endpoint; reusing its response lets us avoid a
-//    duplicate request that often gets rejected with WAF/rate-limit code 555
-//    while the page's request succeeds.
+// Wraps window.fetch (and guards it with a getter/setter so Sentry or any
+// later library cannot replace it with an un-wrapped implementation) to
+// capture the page's own successful /api/biz/pay/batch-preview response.
+// The page's JS already has to fetch this endpoint; reusing its response
+// (window.__bm_batchPreviewData / sessionStorage 'bm_batch_preview') lets us
+// avoid a duplicate request that often gets rejected with WAF/rate-limit
+// code 555 while the page's request succeeds.
 (function() {
-  if (window.__bm_originalFetch) return;
+  if (window.__bm_early_injected) return;
+  window.__bm_early_injected = true;
   try {
     var nativeFetch = window.fetch;
-    window.__bm_originalFetch = nativeFetch;
     window.__bm_batchPreviewData = null;
 
     function cacheBatchPreview(data) {
@@ -56,7 +55,5 @@
     } catch(e) {
       window.fetch = wrappedFetch;
     }
-
-    window.__bm_originalXHR = window.XMLHttpRequest;
   } catch (e) {}
 })();

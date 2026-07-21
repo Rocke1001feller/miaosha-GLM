@@ -13,7 +13,7 @@
     usage:       { kicker: 'Documentation', title: '使用说明',         subtitle: 'Fire 面板四控件含义、4 种组合与 Preload → Strike → Commit 完整链路。' },
     architecture:{ kicker: 'Documentation', title: '软件架构',         subtitle: 'architecture.md 的网页版摘要：整体架构、入口点、同源代理、auth 与 ticket 系统。' },
     insights:    { kicker: 'Documentation', title: '关键洞察',         subtitle: '通过真实实验推断的智谱后端限流算法与单用户最优发射节奏。' },
-    'release-log': { kicker: 'Release Notes', title: 'v1.4.2 更新日志', subtitle: '火山引擎覆盖层登录态守卫、Wave 轮询模式、默认刷新间隔调整为 0.5s、calculatePriceV5 失败重试与日志降噪。' },
+    'release-log': { kicker: 'Release Notes', title: 'v2.0.0 更新日志', subtitle: '品牌升级为《智能Coding Plan助手》：买家秀 UGC 上线（popup 聚合 + 营销页现场层）、Token 用量四平台监控、AI 新闻国内镜像回退、全线国内直连可达。' },
   };
 </script>
 
@@ -22,8 +22,8 @@
     <div class="sidebar-top">
       <div class="logo-orb"><div class="logo-icon">Z</div></div>
       <div class="brand-lockup">
-        <span class="brand-zhipu">智谱</span>
-        <span class="brand-miaosha">秒杀助手</span>
+        <span class="brand-zhipu">智能</span>
+        <span class="brand-miaosha">Coding Plan助手</span>
       </div>
       <span class="alpha-badge">Beta</span>
     </div>
