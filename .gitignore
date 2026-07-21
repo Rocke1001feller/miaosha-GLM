@@ -17,3 +17,11 @@ price-967.network-response
 req-968.network-request
 resp-968.network-response
 ai-news
+
+# 本地工作资料：仅保留在本地，不进入开源仓库
+.claude/skills/
+align-who-is-better/
+bilingual-proposals/
+bilingual-ux-proposals/
+carousel-app-switcher/
+news-access-proposals/
