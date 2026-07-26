@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>方案四 · 点按揭示式</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="./index.html">← 返回总览</a>
+
+  <header class="hero">
+    <span class="kicker">方案四</span>
+    <h1>点按揭示式：默认单语，点哪句锚哪句</h1>
+    <p>底层逻辑：<strong>把"关联"变成一次显式的用户动作</strong>。默认渲染纯中文（或纯英文）——大多数时间你根本不需要对照；读不懂时，点击/悬停某一段，它的另一种语言版本就地展开。锚定是按需的，不是强制的。</p>
+  </header>
+
+  <div class="card">
+    <h3>工作方式</h3>
+    <div class="flow">默认：仅中文（流畅阅读流，零排版噪声）
+  → 点击段落 → 段内滑出英文原文（再点收起）
+  → 数据复用现有段级 pairs，零契约改动
+  → 可加"全部展开/全部收起"总开关</div>
+  </div>
+
+  <div class="card">
+    <h3>优点</h3>
+    <ul class="dots">
+      <li>阅读流最干净：单语连贯，双语按需；</li>
+      <li>实现轻（前端交互，无数据改动）；</li>
+      <li>天然适配"泛读为主、偶尔查证"的真实习惯。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>局限</h3>
+    <ul class="dots">
+      <li>与你此前"打开即双语"的诉求方向相反——它把双语从默认变成可选；</li>
+      <li>仍是段级关联，长段内句级问题依旧；</li>
+      <li>点击操作在触屏上不如桌面顺手（hover 不存在）。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>适合谁</h3>
+    <ul class="dots">
+      <li>作为句级对照之外的"极速泛读模式"很有价值，可作二期视图；不回答本次"句级关联"的主问题。</li>
+    </ul>
+  </div>
+
+  <footer>方案四 · 最干净的阅读流 · 但不回答句级关联</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>P2 · Cloudflare Worker 自建阅读器</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="./index.html">← 返回总览</a>
+
+  <header class="hero">
+    <span class="kicker">方案 P2</span>
+    <h1>Cloudflare Worker 自建阅读器</h1>
+    <p>底层逻辑：<strong>免费 serverless 上的实时「抓取 + 正文提取」服务</strong>。点击时 popup 把链接指向你的 Worker（<code>/read?u=原文URL</code>），Worker 在 Cloudflare 边缘节点（境外）抓源站、用 Readability 类算法抽正文、返回一个干净的阅读页。自己掌控，不依赖第三方服务条款。</p>
+  </header>
+
+  <div class="card">
+    <h3>点击时序</h3>
+    <div class="flow">用户在 popup 点击新闻卡片
+  → NewsCard 改写为 https://&lt;your-worker&gt;.workers.dev/read?u=&lt;urlencoded 原文&gt;
+  → Worker 校验 URL 在「数据集允许列表」内（防滥用）
+  → Worker 抓取源站 HTML → Readability 提取正文 → 渲染阅读页
+  → 用户看到干净阅读页（你的品牌/样式，可加「查看原文」链接）</div>
+  </div>
+
+  <div class="card">
+    <h3>组成与改动量</h3>
+    <ul class="dots">
+      <li><b>Worker 代码</b>：~150 行。抓取（带常见 UA/超时/重试）+ DOM 解析（linkedom）+ Readability 提取（@mozilla/readability 可在 Worker 跑）+ 模板渲染。</li>
+      <li><b>允许列表</b>：Worker 启动时拉一次 latest-24h.json 的 URL 集合（或按域名白名单），只服务数据集内链接——<b>这是防止被当公开代理的关键</b>。</li>
+      <li><b>popup 改动</b>：NewsCard 链接改写（同 P1 的一处）。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>成本</h3>
+    <span class="tag free">免费额度内</span>
+    <ul class="dots">
+      <li>Workers 免费档：每天 100,000 次请求、每次 10ms CPU——正文提取 CPU 开销小，单人场景远低于上限。</li>
+      <li>无需服务器、无需域名（workers.dev 子域即可）。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>优点</h3>
+    <ul class="dots">
+      <li>自主可控：样式、缓存、降级策略都归你；</li>
+      <li>免费额度对个人项目绰绰有余；</li>
+      <li>边缘节点离用户近，延迟比日本 VPS 更优；</li>
+      <li>是 P5（懒快照）的直接前身——加缓存层即升级。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>局限与风险</h3>
+    <ul class="dots">
+      <li><b>workers.dev 在大陆的可达性不稳定</b>（地区/运营商差异，历史上多数可达但偶发抽风）。绑定自有域名到 Cloudflare 可改善，但 CF 免费版在大陆没有 CDN 节点，仍走境外回源。需实测。</li>
+      <li>强反爬站点（Cloudflare 盾、JS 渲染、登录墙）会失败——Worker 没有浏览器内核。</li>
+      <li>提取质量依赖 Readability 命中率，列表页/交互页效果差。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>落地步骤</h3>
+    <ul class="dots">
+      <li>① <code>npm create cloudflare</code> 建 Worker，写 /read 路由（允许列表校验 → fetch → extract → html）；</li>
+      <li>② 部署后在大陆实测可达性（同 P1 验证清单）；</li>
+      <li>③ popup 链接改写切换为 Worker 地址；</li>
+      <li>④ 加 24h KV 缓存可选（自然过渡到 P5）。</li>
+    </ul>
+  </div>
+
+  <footer>P2 · 自主可控的免费实时阅读器</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>新闻可达性方案脑暴 · 总览</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <span class="kicker">脑暴 · 网络新闻访问问题</span>
+    <h1>让 popup 里的新闻链接「点开就能读」</h1>
+    <p>角色：中国大陆用户。现象：popup 新闻列表正常，但点开部分境外科技媒体原文（如 TechCrunch）无法连接。
+    约束：只保证「从我们的 popup 打开」的链接可读；同一 URL 用户自己直接打开通不通，与我们无关。
+    资源：一台日本服务器（用户与内容源双向可达）、可熟练操作阿里云/腾讯云/Cloudflare。目标：成本尽可能低，最好免费，充分利用现成资源。</p>
+  </header>
+
+  <h2 class="sec">一、需求本质是什么（先想透，再动手）</h2>
+
+  <div class="card">
+    <h3>本质 1：这不是「全局网络问题」，而是「应用层内容可达性缺口」</h3>
+    <p style="font-size:13.5px">
+      数据链路分两段：聚合端（GitHub Actions / 日本）→ 内容源 <strong>可达</strong>；阅读端（大陆用户）→ 部分境外源 <strong>不可达</strong>。
+      缺口只发生在第二段的「点开原文」这一刻。所以正确答案不是任何系统级方案，而是：
+      <strong>给一个封闭的、我们自己生成的 URL 集合，做一个「应用层内容中继」</strong>——用户点开时，让内容经由一条双方都能走的路送达。
+    </p>
+  </div>
+
+  <div class="card">
+    <h3>本质 2：范围自我限定 = 成本可以压到接近零</h3>
+    <p style="font-size:13.5px">
+      「只保证 popup 里打开的链接」是一个极其有利的约束：待保障的 URL 集合是<b>封闭的、已知的、每天可枚举的</b>（就是
+      latest-24h.json 里那 ~1000 条）。这意味着——
+    </p>
+    <ul class="dots">
+      <li>可以做 <b>per-URL 改写/包装</b>（点击时把链接换成中继地址），不需要任何常驻代理；</li>
+      <li>可以做 <b>允许列表</b>（中继只服务出现在数据集里的 URL），天然防止中继被滥用成公开代理；</li>
+      <li>甚至可以 <b>提前把内容取回来</b>（构建期快照），点击时完全不再依赖境外源。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>本质 3：内容性质决定技术选型——「文字报道」用阅读器模式，不用全站反代</h3>
+    <p style="font-size:13.5px">
+      目标内容是公开的 AI/科技新闻，正文以文字为主。这类内容用<b>正文提取（Readability / trafilatura / Reader API）</b>
+      的命中率远高于全站反向代理：页面更干净、加载更快、被反爬拦截率更低、带宽消耗小一个数量级。
+      全站反代（连 JS/CSS/图片一起中转）是最重、最脆、最贵的路径，只在确实需要原文完整排版时才考虑。
+    </p>
+  </div>
+
+  <h2 class="sec">二、五个底层逻辑不同的方案</h2>
+
+  <table class="t">
+    <thead>
+      <tr><th style="width:34px">#</th><th>方案</th><th>底层逻辑</th><th>成本</th><th>上线工作量</th><th>主要风险</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>P1</td>
+        <td><a href="./p1-jina-reader.html">现成阅读器 API（r.jina.ai）</a></td>
+        <td>零自建：链接改写成第三方 Reader API URL，内容由它代取</td>
+        <td><span class="tag free">免费档</span></td>
+        <td>≈30 分钟（改 1 处链接改写）</td>
+        <td>大陆可达性需实测；第三方依赖与限额</td>
+      </tr>
+      <tr>
+        <td>P2</td>
+        <td><a href="./p2-cf-worker-reader.html">Cloudflare Worker 自建阅读器</a></td>
+        <td>免费 serverless 上跑「抓取 + 正文提取」，点击时实时出阅读页</td>
+        <td><span class="tag free">免费额度内</span></td>
+        <td>1–2 天（Worker + Readability 移植）</td>
+        <td>workers.dev 大陆稳定性；反爬强的站点失败</td>
+      </tr>
+      <tr>
+        <td>P3</td>
+        <td><a href="./p3-pipeline-snapshot.html">构建期全文快照（扩展现有管线）</a></td>
+        <td>GitHub Actions 每 2h 抓取时顺带存正文，点击时读自家静态快照</td>
+        <td><span class="tag free">0 边际成本</span></td>
+        <td>2–4 天（管线 + reader 页 + data 结构）</td>
+        <td>快照覆盖仅限数据集内条目；存储/抓取时长膨胀</td>
+      </tr>
+      <tr>
+        <td>P4</td>
+        <td><a href="./p4-japan-reverse-proxy.html">日本服务器全透明反向代理</a></td>
+        <td>整站中转：HTML/CSS/JS/图片全代理，保真度最高</td>
+        <td><span class="tag mid">已有服务器 0 新增</span></td>
+        <td>2–3 天（反代 + URL 重写 + 防滥用）</td>
+        <td>最重最脆；带宽与反爬；防滥用必须做硬</td>
+      </tr>
+      <tr>
+        <td>P5</td>
+        <td><a href="./p5-lazy-edge-cache.html">懒加载边缘快照（点击触发 + 缓存）</a></td>
+        <td>P2+P3 混合：首次点击实时抓取提取并缓存，后续点击秒开</td>
+        <td><span class="tag free">免费额度内</span></td>
+        <td>3–5 天（Worker + KV/R2 缓存层）</td>
+        <td>首次点击慢（1–3s）；缓存键/失效策略需设计</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2 class="sec">三、横向对比关键维度</h2>
+  <table class="t">
+    <thead><tr><th>维度</th><th>P1 jina</th><th>P2 CF 自建</th><th>P3 管线快照</th><th>P4 全反代</th><th>P5 懒快照</th></tr></thead>
+    <tbody>
+      <tr><th>点击延迟</th><td>1–3s</td><td>1–3s</td><td><b>≈0（本地/静态）</b></td><td>2–5s</td><td>首次 1–3s，之后 ≈0</td></tr>
+      <tr><th>离线/源站挂掉</th><td>挂</td><td>挂</td><td><b>不受影响</b></td><td>挂</td><td>已缓存部分不受影响</td></tr>
+      <tr><th>反爬站点（Medium/部分博客）</th><td>中</td><td>中</td><td><b>较好（管线在境外，IP 干净）</b></td><td>较差</td><td>中</td></tr>
+      <tr><th>排版保真</th><td>阅读版式</td><td>阅读版式</td><td>阅读版式</td><td><b>原站保真</b></td><td>阅读版式</td></tr>
+      <tr><th>被滥用风险</th><td>无（第三方兜底）</td><td>需允许列表</td><td>无</td><td><b>高，必须硬防</b></td><td>需允许列表</td></tr>
+      <tr><th>对现有架构侵入</th><td>改 1 行</td><td>popup 链接改写</td><td>管线 + popup reader 页</td><td>popup 链接改写</td><td>popup 链接改写</td></tr>
+      <tr><th>长期可控性</th><td>看第三方脸色</td><td>较好</td><td><b>完全自主</b></td><td>自主但重</td><td>较好</td></tr>
+    </tbody>
+  </table>
+
+  <div class="verdict">
+    <h2>我的判断与推荐路线</h2>
+    <p style="border:1.5px solid #ffd166;padding:8px 12px;border-radius:6px;margin-bottom:10px">
+      <strong>2026-07-19 更新：P1 经实测已弃用。</strong>r.jina.ai 对 Techmeme 等站返回 Cloudflare 403/验证码拦截页，
+      部分页面内容为链接残渣，体验不达标。全线采用 P3 快照模式：快照条目走扩展内阅读页，
+      无快照条目直接打开原始链接（依赖用户自身网络）。
+    </p>
+    <p><strong>不要一步到位，分两步走：</strong></p>
+    <ol>
+      <li><strong>今天：P1（r.jina.ai）先上线验证。</strong>改动只有 NewsCard 一处链接改写，30 分钟。立刻回答两个关键未知数：① r.jina.ai 在大陆的实际可达性与速度；② 目标源的正文提取命中率。这两个答案决定后面选哪条重型路线。</li>
+      <li><strong>本周：P3（管线快照）作为主力方案落地。</strong>它与你的架构天然同构——你已经有一条每 2 小时抓 100+ 源的管线和一个静态托管，把「正文提取」加进去，边际成本为零，可控性最强，还能顺带获得「源站挂掉也能读」的离线能力。P2/P5 留作 P1 验证失败（jina 不可达）且 P3 未就绪时的过渡；P4 仅当确实需要原站完整排版时再考虑。</li>
+    </ol>
+    <p>合规与可持续注意：只中继公开报道正文；不破解付费墙；中继必须做「数据集 URL 允许列表」防止被当公开代理；控制抓取频率尊重源站。</p>
+  </div>
+
+  <footer>脑暴产出 · 2026-07-18 · 所有方案页面完全离线可预览</footer>
+
+</div>
+</body>
+</html>

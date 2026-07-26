@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>B3 · 端侧模型翻译（Chrome 内置 AI）</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="./index.html">← 返回总览</a>
+
+  <header class="hero">
+    <span class="kicker">方案 B3</span>
+    <h1>端侧模型翻译：把算力交给用户设备</h1>
+    <p>底层逻辑：<strong>不经过任何服务器</strong>。Chrome 138+ 内置 Gemini Nano，提供 <code>Translator API</code>（<code>translation.createTranslator({sourceLanguage:'en', targetLanguage:'zh'})</code>）。reader 页在浏览器本地下载模型后逐段翻译——离线、免费、隐私、无跨境网络问题。</p>
+  </header>
+
+  <div class="card">
+    <h3>工作方式</h3>
+    <div class="flow">reader 页检测 'translation' in window && 可用语言对
+  → 首次使用触发模型下载（GB 级，浏览器管）
+  → 逐段 translate()，中文插入英文段下方
+  → 无网络请求、无 key、无服务器成本</div>
+  </div>
+
+  <div class="card">
+    <h3>成本</h3>
+    <span class="tag free">免费</span>
+    <ul class="dots">
+      <li>零后端、零 API 费用；管线与契约零改动。</li>
+      <li>代价转移到用户侧：Chrome 138+、能跑得动端侧模型的设备、首次模型下载（大且耗时）。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>优点</h3>
+    <ul class="dots">
+      <li><b>对大陆用户天然免疫</b>——不依赖任何境外端点；</li>
+      <li>隐私好（内容不出设备），无速率限制；</li>
+      <li>段落级翻译速度不错（本地推理），滚动翻译体验接近即时。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>局限与风险</h3>
+    <ul class="dots">
+      <li><b>可用性门槛</b>：需要较新 Chrome + 足够内存/存储；覆盖面无法保证（需要特性检测 + 优雅降级）；</li>
+      <li>首次使用要下载模型（可能数百 MB 到数 GB），首次体验差；</li>
+      <li>小模型质量低于云端 LLM，长难句/术语一般；</li>
+      <li>API 形态较新，可能有变更风险（需要封装隔离）。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>适合谁</h3>
+    <ul class="dots">
+      <li>作为「无译文条目的本地兜底」非常合适：有 Nano 就一键本地翻，没有就隐藏按钮。不建议作为唯一翻译源——用户设备参差不齐，无法承诺一致性体验。</li>
+    </ul>
+  </div>
+
+  <footer>B3 · 离线免费隐私 · 但设备门槛决定它只能做兜底</footer>
+</div>
+</body>
+</html>

@@ -224,9 +224,19 @@ export default defineBackground(() => {
     }
   }
 
+  // UsageBar macOS 桥：周期性把用量缓存推送到本机菜单栏 app（disabled 时 tick 静默返回）。
+  // 基础节奏 60s；runBridgePushTick 每次执行后按当次 cache 重排——临近重置窗口（±15min）加速到 30s。
+  chrome.alarms.create('usage-bridge-push', { periodInMinutes: 1 });
+
   // R1 / R4: chrome.alarms — TOP LEVEL registration (not inside async function!)
   chrome.alarms.onAlarm.addListener(async (alarm) => {
     const { name } = alarm;
+
+    if (name === 'usage-bridge-push') {
+      const { runBridgePushTick } = await import('../lib/usage/bridge-push');
+      await runBridgePushTick();
+      return;
+    }
 
     if (name.startsWith('flash-')) {
       const min = parseInt(name.split('-')[1], 10);

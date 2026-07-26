@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>方案五 · 陷阱模式图鉴 — Coding Plan 横评</title>
+<style>
+  /* ============ 图鉴手册风（排雷 field-guide）============ */
+  :root{
+    --paper:#f5efe2;        /* 纸张米白 */
+    --card:#fffdf6;         /* 卡片纸面 */
+    --ink:#23212b;          /* 墨色 */
+    --ink-soft:#5b5768;
+    --red:#b3282d;          /* 危险红 */
+    --amber:#b97a0f;        /* 推算/第三方 琥珀 */
+    --mkt:#7c3aed;          /* 营销话术 紫 */
+    --doc:#1f4e79;          /* 文档条款 蓝黑 */
+    --good:#2e7d4f;         /* 反例/良心 绿 */
+    --line:2px solid var(--ink);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--paper);
+    background-image:repeating-linear-gradient(0deg,transparent 0 27px,rgba(35,33,43,.045) 27px 28px);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    font-size:16px;line-height:1.75;
+  }
+  .wrap{max-width:1140px;margin:0 auto;padding:0 24px}
+  h1,h2,h3,.kai{font-family:"Kaiti SC","STKaiti","KaiTi","Songti SC",serif;letter-spacing:.02em}
+
+  /* ---------- 顶部方案横幅 ---------- */
+  .banner{
+    margin:36px 0 8px;border:var(--line);background:var(--ink);color:#fdfaf2;
+    box-shadow:6px 6px 0 rgba(35,33,43,.25);padding:28px 32px;position:relative;overflow:hidden;
+  }
+  .banner::after{
+    content:"排雷手册";position:absolute;right:26px;top:18px;transform:rotate(6deg);
+    border:3px double var(--red);color:#ff8f93;border-radius:6px;padding:4px 12px;
+    font-family:"Kaiti SC","STKaiti","KaiTi",serif;font-size:20px;opacity:.9;
+  }
+  .banner .scheme{font-size:13px;letter-spacing:.35em;color:#e8c87a}
+  .banner h1{font-size:40px;margin:6px 0 10px}
+  .banner .logic{font-size:16px;color:#d9d4e6;max-width:760px}
+  .banner .logic b{color:#fff}
+
+  /* ---------- 导航 ---------- */
+  nav{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0 36px}
+  nav a{
+    text-decoration:none;color:var(--ink);border:var(--line);background:var(--card);
+    padding:5px 14px;font-size:14px;box-shadow:3px 3px 0 rgba(35,33,43,.25);
+  }
+  nav a:hover{background:var(--ink);color:#fdfaf2}
+
+  /* ---------- 区块标题 ---------- */
+  .sec{margin:56px 0}
+  .sec-head{display:flex;align-items:baseline;gap:14px;border-bottom:3px double var(--ink);padding-bottom:8px;margin-bottom:6px}
+  .sec-head h2{font-size:28px}
+  .sec-head .sub{font-size:13px;color:var(--ink-soft)}
+  .sec-note{font-size:13.5px;color:var(--ink-soft);margin:8px 0 20px}
+
+  /* ---------- 换算基准条 ---------- */
+  .benchmark{
+    border:2px dashed var(--amber);background:#fdf6e3;padding:14px 18px;font-size:14px;margin:0 0 8px;
+  }
+  .benchmark b{color:var(--amber)}
+  .benchmark .asm{color:var(--ink-soft);font-size:13px}
+
+  /* ---------- (a) 速查矩阵 ---------- */
+  .matrix-scroll{overflow-x:auto;border:var(--line);background:var(--card);box-shadow:5px 5px 0 rgba(35,33,43,.2)}
+  table.matrix{border-collapse:collapse;width:100%;min-width:760px;font-size:14px}
+  .matrix th,.matrix td{border:1px solid rgba(35,33,43,.35);padding:10px 12px;text-align:center}
+  .matrix thead th{background:var(--ink);color:#fdfaf2;font-size:14px;white-space:nowrap}
+  .matrix thead th .en{display:block;font-size:11px;color:#bdb8ce;font-weight:normal;letter-spacing:.08em}
+  .matrix th.rowh{text-align:left;min-width:170px;background:#efe7d3}
+  .matrix th.rowh .ic{font-size:18px;margin-right:6px}
+  .matrix th.rowh .nm{font-family:"Kaiti SC","STKaiti","KaiTi",serif;font-size:16px}
+  .matrix td.cell{width:150px;height:56px;vertical-align:middle;position:relative}
+  .matrix td.miss{background:transparent;color:#b9b3a4;font-size:12px}
+  .matrix td.hit{background:var(--ink);color:#fff;cursor:help}
+  .matrix td.hit .vname{font-weight:700;font-size:14px}
+  .matrix td.hit .cnt{display:inline-block;margin-left:4px;background:var(--red);border-radius:10px;padding:0 7px;font-size:11px}
+  .matrix td.rev{
+    background:repeating-linear-gradient(45deg,#e8f3ec 0 8px,#d4e8dc 8px 16px);
+    color:var(--good);cursor:help;
+  }
+  .matrix td.rev .vname{font-weight:700}
+  .matrix td.rev .badge{display:inline-block;border:1.5px solid var(--good);border-radius:4px;font-size:11px;padding:0 6px;margin-left:4px}
+  .legend{display:flex;flex-wrap:wrap;gap:18px;font-size:13px;color:var(--ink-soft);margin:12px 2px 0}
+  .legend i{display:inline-block;width:14px;height:14px;vertical-align:-2px;margin-right:6px;border:1px solid var(--ink)}
+  .legend .l-hit{background:var(--ink)}
+  .legend .l-rev{background:repeating-linear-gradient(45deg,#e8f3ec 0 4px,#d4e8dc 4px 8px)}
+  .legend .l-miss{background:transparent;border-style:dotted}
+
+  /* ---------- (b) 图鉴卡 ---------- */
+  .field-guide{display:grid;grid-template-columns:1fr;gap:34px}
+  .gcard{
+    border:var(--line);background:var(--card);box-shadow:6px 6px 0 rgba(35,33,43,.22);
+    padding:26px 30px 24px;position:relative;scroll-margin-top:20px;
+  }
+  .gcard::before{ /* 图鉴编号角标 */
+    content:attr(data-no);position:absolute;top:-16px;left:22px;
+    background:var(--red);color:#fff;font-family:"Kaiti SC","STKaiti","KaiTi",serif;
+    font-size:15px;padding:2px 14px;border:2px solid var(--ink);letter-spacing:.1em;
+  }
+  .gcard .gc-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:6px 0 4px}
+  .gcard .gc-icon{font-size:34px;line-height:1}
+  .gcard h3{font-size:24px}
+  .gcard .spread{
+    margin-left:auto;font-size:12.5px;color:var(--ink-soft);border:1.5px dashed var(--ink-soft);
+    padding:2px 10px;border-radius:12px;white-space:nowrap;
+  }
+  .gcard .define{font-size:15px;color:var(--ink);background:#f3ecdb;border-left:4px solid var(--ink);padding:10px 14px;margin:12px 0}
+  .gcard .define::before{content:"模式定义";display:block;font-size:11.5px;letter-spacing:.3em;color:var(--ink-soft);margin-bottom:2px}
+  .mnemonic{
+    display:flex;gap:12px;align-items:flex-start;margin:14px 0 18px;
+    border:2px solid var(--red);background:#fdf0ef;padding:12px 16px;
+  }
+  .mnemonic .mk{
+    flex:none;background:var(--red);color:#fff;font-size:12px;padding:2px 8px;border-radius:3px;
+    letter-spacing:.2em;margin-top:4px;font-family:"Kaiti SC","STKaiti","KaiTi",serif;
+  }
+  .mnemonic p{font-size:17px;font-family:"Kaiti SC","STKaiti","KaiTi",serif;color:var(--red)}
+  .gcard h4{font-size:14px;letter-spacing:.25em;color:var(--ink-soft);margin:18px 0 10px;font-family:inherit}
+  .inst{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px dashed rgba(35,33,43,.25);font-size:14.5px}
+  .inst:last-child{border-bottom:none}
+  .vchip{
+    flex:none;min-width:64px;text-align:center;background:var(--ink);color:#fff;font-size:12.5px;
+    padding:1px 10px;border-radius:10px;margin-top:3px;
+  }
+  .vchip.all{background:var(--red)}
+  .vchip.rev{background:var(--good)}
+
+  /* 证据区：营销话术 vs 文档条款（视觉强区分） */
+  .evi{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:820px){.evi{grid-template-columns:1fr}}
+  .evi-col{border:2px solid;padding:12px 14px}
+  .evi-col.mkt{border-color:var(--mkt);background:#f7f2ff}
+  .evi-col.doc{border-color:var(--doc);background:#f0f5fb}
+  .evi-col .colh{font-size:12px;letter-spacing:.3em;margin-bottom:8px}
+  .evi-col.mkt .colh{color:var(--mkt)}
+  .evi-col.doc .colh{color:var(--doc)}
+  .quote{font-size:14px;padding:8px 0;border-bottom:1px dashed rgba(35,33,43,.2)}
+  .quote:last-child{border-bottom:none;padding-bottom:0}
+  .evi-col.mkt .quote{font-style:italic;color:#4a3585}
+  .evi-col.mkt .quote::before{content:"“ ";color:var(--mkt);font-weight:700}
+  .evi-col.mkt .quote::after{content:" ”";color:var(--mkt);font-weight:700}
+  .evi-col.doc .quote{color:#22405f;padding-left:12px;border-left:3px solid var(--doc);margin:6px 0}
+  .qmeta{display:flex;gap:8px;align-items:center;margin-top:3px;font-size:11.5px}
+  .qwho{background:rgba(35,33,43,.85);color:#fff;padding:0 7px;border-radius:8px}
+  .src-tag{display:inline-block;padding:0 7px;border-radius:3px;font-size:11px;letter-spacing:.05em}
+  .src-mkt{background:var(--mkt);color:#fff}
+  .src-doc{background:var(--doc);color:#fff}
+  .src-third{background:var(--amber);color:#fff}
+  .src-sum{background:#8b8797;color:#fff}
+
+  /* 折算放大镜 */
+  .magnify{margin-top:16px;border:2px dashed var(--amber);background:#fdf6e3;padding:12px 16px;font-size:14px}
+  .magnify .mh{color:var(--amber);font-size:12px;letter-spacing:.3em;margin-bottom:6px}
+  .magnify .asm{display:block;margin-top:6px;font-size:12.5px;color:var(--ink-soft)}
+  .magnify .asm b{color:var(--amber)}
+  .magnify ul{margin-left:20px}
+  .magnify .verdict{margin-top:6px;font-family:"Kaiti SC","STKaiti","KaiTi",serif;font-size:15px;color:#7a4d06}
+
+  /* ---------- (c) 自查清单 ---------- */
+  .check-panel{border:var(--line);background:var(--card);box-shadow:6px 6px 0 rgba(35,33,43,.22);padding:24px 28px}
+  .check-head{display:flex;flex-wrap:wrap;align-items:center;gap:16px;margin-bottom:14px}
+  .score{flex:1;min-width:260px}
+  .score .bar{height:18px;border:2px solid var(--ink);background:#eee7d4;position:relative;overflow:hidden}
+  .score .bar i{position:absolute;left:0;top:0;bottom:0;background:var(--red);width:0%;transition:width .25s}
+  .score .txt{font-size:13.5px;margin-top:6px;color:var(--ink-soft)}
+  .score .txt b{font-size:16px}
+  .reset{
+    border:2px solid var(--ink);background:var(--paper);padding:6px 16px;cursor:pointer;
+    font-size:13px;font-family:inherit;box-shadow:3px 3px 0 rgba(35,33,43,.3);
+  }
+  .reset:hover{background:var(--ink);color:#fdfaf2}
+  .qlist{display:grid;grid-template-columns:1fr 1fr;gap:10px 22px;list-style:none}
+  @media(max-width:820px){.qlist{grid-template-columns:1fr}}
+  .qlist li{display:flex;gap:10px;align-items:flex-start;border:1.5px solid rgba(35,33,43,.4);padding:10px 12px;font-size:14px;background:#fffdf6}
+  .qlist li.on{background:#fdeceb;border-color:var(--red)}
+  .qlist input{appearance:none;flex:none;width:18px;height:18px;border:2px solid var(--ink);margin-top:4px;cursor:pointer;background:#fff}
+  .qlist input:checked{background:var(--red);border-color:var(--red);box-shadow:inset 0 0 0 3px #fdeceb}
+  .qlist .q{cursor:pointer}
+  .qlist .ptag{flex:none;font-size:11.5px;border:1.5px solid var(--ink-soft);border-radius:10px;padding:0 8px;color:var(--ink-soft);margin-top:3px;white-space:nowrap}
+  .qlist li.on .ptag{border-color:var(--red);color:var(--red)}
+
+  /* ---------- (d) 设计逻辑 / 页脚 ---------- */
+  .rationale{border:var(--line);background:var(--card);box-shadow:6px 6px 0 rgba(35,33,43,.22);padding:26px 30px}
+  .rationale h3{font-size:20px;margin:14px 0 6px}
+  .rationale h3:first-child{margin-top:0}
+  .rationale p,.rationale li{font-size:14.5px;color:#38353f}
+  .rationale ul{margin:6px 0 10px 22px}
+  footer{margin:44px 0 60px;font-size:13px;color:var(--ink-soft);border-top:3px double var(--ink);padding-top:16px}
+  footer .srclist{margin:10px 0}
+  footer .srclist b{color:var(--ink)}
+  footer a{color:var(--doc);word-break:break-all}
+  footer .plain-sources{font-size:12px;color:#8b8797;margin-left:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- 方案横幅 -->
+  <header class="banner">
+    <div class="scheme">方案五 / PROPOSAL 05</div>
+    <h1>陷阱模式图鉴</h1>
+    <p class="logic">底层逻辑：<b>不按公司组织，按套路组织</b> —— 把 4 家厂商的营销手法抽象成 7 种通用反模式，教用户自己识别陷阱，授人以渔。</p>
+  </header>
+
+  <nav id="nav">
+    <a href="#matrix">速查矩阵</a>
+    <a href="#guide">陷阱图鉴 ×7</a>
+    <a href="#checklist">反套路自查清单</a>
+    <a href="#rationale">设计逻辑与取舍</a>
+  </nav>
+
+  <!-- 全局换算基准（所有折算的统一假设） -->
+  <div class="benchmark" id="benchmark"></div>
+
+  <!-- (a) 速查矩阵 -->
+  <section class="sec" id="matrix">
+    <div class="sec-head"><h2>速查矩阵</h2><span class="sub">7 种陷阱模式 × 4 家厂商 · 命中热力表</span></div>
+    <p class="sec-note">深色格 = 该厂命中此套路；绿色斜纹格 = 反向操作（反而让利）。鼠标悬停格子可查看具体实例。</p>
+    <div class="matrix-scroll"><table class="matrix" id="matrixTable"></table></div>
+    <div class="legend">
+      <span><i class="l-hit"></i>命中该模式</span>
+      <span><i class="l-rev"></i>反向操作（良心少数派）</span>
+      <span><i class="l-miss"></i>未见公开实例</span>
+    </div>
+  </section>
+
+  <!-- (b) 陷阱图鉴卡 -->
+  <section class="sec" id="guide">
+    <div class="sec-head"><h2>陷阱图鉴</h2><span class="sub">每张卡 = 一种反模式：定义 → 口诀 → 实例 → 原文对照</span></div>
+    <p class="sec-note">「原文对照」中 <span class="src-tag src-mkt">营销话术</span> 为斜体引语（性质：宣传），<span class="src-tag src-doc">文档条款</span> 为蓝条引用（性质：契约）—— 两者效力不同，务必分开看。<span class="src-tag src-third">第三方/推算</span> 单独标琥珀色。</p>
+    <div class="field-guide" id="cards"></div>
+  </section>
+
+  <!-- (c) 自查清单 -->
+  <section class="sec" id="checklist">
+    <div class="sec-head"><h2>反套路自查清单</h2><span class="sub">购买任何 coding plan 前的 10 问</span></div>
+    <p class="sec-note">逐条对照目标套餐的条款作答；每勾中一条 = 踩中一个雷。此清单从上方 7 种模式派生，适用于本页 4 家之外的任何新套餐。</p>
+    <div class="check-panel">
+      <div class="check-head">
+        <div class="score">
+          <div class="bar"><i id="scoreFill"></i></div>
+          <div class="txt" id="scoreTxt"></div>
+        </div>
+        <button class="reset" id="resetBtn">清空重查</button>
+      </div>
+      <ul class="qlist" id="qlist"></ul>
+    </div>
+  </section>
+
+  <!-- (d) 设计逻辑与取舍 -->
+  <section class="sec" id="rationale">
+    <div class="sec-head"><h2>本方案设计逻辑与取舍</h2><span class="sub">为什么这样组织信息</span></div>
+    <div class="rationale">
+      <h3>为什么选「反模式」这个维度</h3>
+      <p>厂商会换、价格会涨、模型会下线，但<strong>营销套路是跨厂复用、长期稳定的</strong>。按公司组织的横评只能回答「现在买谁」，按反模式组织的图鉴回答的是「以后遇到任何套餐怎么判断」——对决策疲劳的用户，分类框架比结论更有复利。</p>
+      <h3>优势</h3>
+      <ul>
+        <li><strong>授人以渔</strong>：7 种模式 + 10 条自查问题可直接套用到本页未覆盖的新厂商、新套餐。</li>
+        <li><strong>举证可溯</strong>：每条实例标注厂商，营销话术与文档条款分栏展示且标明来源性质，推算数据一律附假设，避免「看起来像结论的猜测」。</li>
+        <li><strong>热力矩阵一屏定位</strong>：先看矩阵找自己 shortlisted 厂商的雷区，再按需读卡，信息动线短。</li>
+      </ul>
+      <h3>局限</h3>
+      <ul>
+        <li>7 种模式是从 4 家样本归纳的，<strong>不完备</strong>——新套路（如算力黄牛的二手套餐、区域定价差）未收录。</li>
+        <li>举证不对称：各家被收录的实例数量取决于公开资料的丰富度，格子少 ≠ 更安全。</li>
+        <li>识别口诀与自查清单是项目组基于数据创作的<strong>教学表达</strong>，本身不是事实数据；命中格子也只代表「公开页面可见」，不代表私下条款不存在。</li>
+        <li>不回答「买哪家」——本方案教判断方法，选型结论需配合其他方案阅读。</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer id="footer"></footer>
+</div>
+
+<script src="./shared/data.js"></script>
+<script>
+(function(){
+  'use strict';
+  var D = window.PLAN_BATTLE_DATA;
+  if(!D){ document.body.innerHTML = '<p style="padding:40px">未找到 PLAN_BATTLE_DATA，请确认 shared/data.js 与本文件相对位置正确。</p>'; return; }
+
+  var SHORT = { 'xiaomi-mimo':'小米', 'minimax':'MiniMax', 'zhipu-glm':'智谱', 'kimi':'Kimi' };
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function vendorOf(id){ for(var i=0;i<D.vendors.length;i++) if(D.vendors[i].id===id) return D.vendors[i]; return null; }
+
+  /* 来源标签着色：第三方 > 文档 > 营销 */
+  function srcTag(src){
+    var cls = 'src-sum';
+    if(src.indexOf('第三方')>-1) cls='src-third';
+    else if(src.indexOf('文档')>-1) cls='src-doc';
+    else if(src.indexOf('营销')>-1) cls='src-mkt';
+    return '<span class="src-tag '+cls+'">'+esc(src)+'</span>';
+  }
+
+  /* ───────── 顶部换算基准条 ───────── */
+  (function(){
+    var st = D.standardTask;
+    document.getElementById('benchmark').innerHTML =
+      '<b>统一换算基准（'+esc(st.name)+'）</b>：'+esc(st.definition)+
+      '；token 构成假设 = 输入 '+(st.inputTokens/1000)+'K（缓存命中率 '+(st.cacheHitRate*100)+'%）+ 输出 '+(st.outputTokens/1000)+'K。'+
+      '<span class="asm">⚠ '+esc(st.note)+' 页面中所有“折算/推算”均在此假设或各卡标注的单独假设下进行。</span>';
+  })();
+
+  /* ───────── (a) 速查矩阵 ───────── */
+  function hitsFor(pattern, vendorId){
+    var out = [];
+    pattern.instances.forEach(function(inst){
+      if(inst.vendor === '全员' || inst.vendor === SHORT[vendorId]) out.push(inst);
+    });
+    return out;
+  }
+  function isReverse(inst){ return /反向|良心|奖励/.test(inst.detail); }
+
+  (function(){
+    var html = '<thead><tr><th style="text-align:left">陷阱模式</th>';
+    D.vendors.forEach(function(v){
+      html += '<th>'+esc(v.company)+'<span class="en">'+esc(v.name)+'</span></th>';
+    });
+    html += '</tr></thead><tbody>';
+    D.gotchaPatterns.forEach(function(p){
+      html += '<tr><th class="rowh"><span class="ic">'+p.icon+'</span><span class="nm">'+esc(p.name)+'</span></th>';
+      D.vendors.forEach(function(v){
+        var hits = hitsFor(p, v.id);
+        if(!hits.length){
+          html += '<td class="cell miss">—</td>';
+        }else{
+          var rev = hits.every(isReverse);
+          var title = hits.map(function(h){ return (h.vendor==='全员'?'【全员】':'【'+h.vendor+'】')+h.detail; }).join('\n');
+          var label = rev ? hits[0].vendor : (hits.length===D.vendors.length && hits[0].vendor==='全员' ? '全员' : SHORT[v.id]);
+          html += '<td class="cell '+(rev?'rev':'hit')+'" title="'+esc(title)+'">'
+                + '<span class="vname">'+esc(label)+'</span>'
+                + (rev ? '<span class="badge">反例</span>' : (hits.length>1?'<span class="cnt">×'+hits.length+'</span>':''))
+                + '</td>';
+        }
+      });
+      html += '</tr>';
+    });
+    html += '</tbody>';
+    document.getElementById('matrixTable').innerHTML = html;
+  })();
+
+  /* ───────── (b) 图鉴卡 ───────── */
+
+  /* 自创识别口诀（教学表达，非事实数据） */
+  var MNEMONICS = {
+    'unit-confusion':'面额再大不作数，先问「汇率」再付钱——说不清 1 单位顶几个 token 的，都是在卖数字口红。',
+    'peak-penalty':'白天三倍夜里八折：你几点写码，就决定你付几折。先看高峰表，再对生物钟。',
+    'shared-pool':'一个池子几个口，先数清楚再下水——别让 PPT 和聊天 Agent 吃掉你写代码的额度。',
+    'no-refund':'默认这笔钱明天就蒸发、额度到期全清零，还愿意买，再买。',
+    'forced-migration':'条款里搜「可调整」「将下线」「以页面为准」，搜得到就只月付、别年付。',
+    'scarcity':'售罄、浮动价、首购特惠都是发令枪——越催越要慢，先截图留证再续费。',
+    'speed-tax':'快不是送的，是从额度里加速烧掉的；速度快几倍，先问额度贵几倍。'
+  };
+
+  /* 原文对照映射：从 PLAN_BATTLE_DATA 各厂商 marketing/fineprint/models/gotchas 中取证（kind+i 定位，内容为数据原文） */
+  var EVIDENCE = {
+    'unit-confusion':[
+      {v:'xiaomi-mimo',kind:'marketing',i:0},
+      {v:'xiaomi-mimo',kind:'fineprint',i:0},
+      {v:'kimi',kind:'marketing',i:1},
+      {v:'kimi',kind:'gotcha',i:0}
+    ],
+    'peak-penalty':[
+      {v:'zhipu-glm',kind:'fineprint',i:0},
+      {v:'zhipu-glm',kind:'fineprint',i:1},
+      {v:'minimax',kind:'fineprint',i:1},
+      {v:'xiaomi-mimo',kind:'marketing',i:3}
+    ],
+    'shared-pool':[
+      {v:'kimi',kind:'marketing',i:0},
+      {v:'kimi',kind:'fineprint',i:0},
+      {v:'kimi',kind:'fineprint',i:1},
+      {v:'xiaomi-mimo',kind:'fineprint',i:1}
+    ],
+    'no-refund':[
+      {v:'xiaomi-mimo',kind:'fineprint',i:2},
+      {v:'minimax',kind:'fineprint',i:2},
+      {v:'zhipu-glm',kind:'fineprint',i:4}
+    ],
+    'forced-migration':[
+      {v:'xiaomi-mimo',kind:'fineprint',i:4},
+      {v:'xiaomi-mimo',kind:'fineprint',i:5},
+      {v:'zhipu-glm',kind:'models'},
+      {v:'kimi',kind:'marketing',i:2}
+    ],
+    'scarcity':[
+      {v:'zhipu-glm',kind:'fineprint',i:2}
+    ],
+    'speed-tax':[
+      {v:'kimi',kind:'fineprint',i:2},
+      {v:'xiaomi-mimo',kind:'models'}
+    ]
+  };
+
+  /* 折算放大镜：引用各厂 computed（含 assumption，绝不省略） */
+  var MAGNIFY = {
+    'unit-confusion':[
+      {v:'xiaomi-mimo', rows:[0], verdict:true},
+      {v:'kimi', rows:[0], verdict:true}
+    ],
+    'peak-penalty':[
+      {v:'zhipu-glm', rows:[0,1], verdict:true}
+    ]
+  };
+
+  function pickEvidence(e){
+    var vd = vendorOf(e.v);
+    if(!vd) return null;
+    if(e.kind==='marketing'){
+      var m = vd.marketing[e.i];
+      return { vendor:SHORT[e.v], text:m.claim, src:m.source, side: m.source.indexOf('营销')>-1 && m.source.indexOf('文档')===-1 && m.source.indexOf('第三方')===-1 ? 'mkt' : 'doc' };
+    }
+    if(e.kind==='fineprint'){
+      var f = vd.fineprint[e.i];
+      return { vendor:SHORT[e.v], text:f.clause, src:f.source, side:'doc' };
+    }
+    if(e.kind==='models'){
+      return { vendor:SHORT[e.v], text:vd.models, src:'文档页（模型清单）', side:'doc' };
+    }
+    if(e.kind==='gotcha'){
+      var g = vd.gotchas[e.i];
+      return { vendor:SHORT[e.v], text:g.label+'：'+g.detail, src:'调研归纳（项目组）', side:'doc' };
+    }
+    return null;
+  }
+
+  function spreadCount(p){
+    var set = {};
+    p.instances.forEach(function(inst){
+      if(inst.vendor==='全员'){ D.vendors.forEach(function(v){ set[v.id]=1; }); }
+      else{
+        D.vendors.forEach(function(v){ if(SHORT[v.id]===inst.vendor) set[v.id]=1; });
+      }
+    });
+    return Object.keys(set).length;
+  }
+
+  (function(){
+    var html = '';
+    D.gotchaPatterns.forEach(function(p, idx){
+      html += '<article class="gcard" data-no="陷阱 No.'+(idx+1)+'">'
+        + '<div class="gc-head"><span class="gc-icon">'+p.icon+'</span><h3>'+esc(p.name)+'</h3>'
+        + '<span class="spread">波及 '+spreadCount(p)+' / '+D.vendors.length+' 家</span></div>'
+        + '<div class="define">'+esc(p.desc)+'</div>'
+        + '<div class="mnemonic"><span class="mk">口诀</span><p>'+esc(MNEMONICS[p.id]||'')+'</p></div>'
+
+        /* 实例举证 */
+        + '<h4>各家实例举证</h4><div class="insts">';
+      p.instances.forEach(function(inst){
+        var cls = inst.vendor==='全员' ? 'all' : (isReverse(inst)?'rev':'');
+        html += '<div class="inst"><span class="vchip '+cls+'">'+esc(inst.vendor)+'</span><div>'+esc(inst.detail)+'</div></div>';
+      });
+      html += '</div>';
+
+      /* 原文对照：营销话术 vs 文档条款 */
+      var evs = (EVIDENCE[p.id]||[]).map(pickEvidence).filter(Boolean);
+      var mkts = evs.filter(function(e){return e.side==='mkt';});
+      var docs = evs.filter(function(e){return e.side==='doc';});
+      if(evs.length){
+        html += '<h4>原文对照（话术与条款分开看）</h4><div class="evi">';
+        html += '<div class="evi-col mkt"><div class="colh">📣 营销话术 · 宣传性质</div>';
+        html += mkts.length ? mkts.map(function(e){
+          return '<div class="quote">'+esc(e.text)+'<div class="qmeta"><span class="qwho">'+esc(e.vendor)+'</span>'+srcTag(e.src)+'</div></div>';
+        }).join('') : '<div class="quote" style="font-style:normal;color:#8b8797">此模式下无直接营销话术取证。</div>';
+        html += '</div><div class="evi-col doc"><div class="colh">📄 文档条款 / 调研归纳 · 契约与事实性质</div>';
+        html += docs.length ? docs.map(function(e){
+          return '<div class="quote">'+esc(e.text)+'<div class="qmeta"><span class="qwho">'+esc(e.vendor)+'</span>'+srcTag(e.src)+'</div></div>';
+        }).join('') : '<div class="quote" style="border:none;color:#8b8797">此模式下无文档条款取证。</div>';
+        html += '</div></div>';
+      }
+
+      /* 折算放大镜 */
+      var mags = MAGNIFY[p.id];
+      if(mags){
+        html += '<div class="magnify"><div class="mh">🔍 折算放大镜 · 推算内容，假设如下</div>';
+        mags.forEach(function(mg){
+          var vd = vendorOf(mg.v);
+          html += '<div><span class="qwho">'+esc(SHORT[mg.v])+'</span> <span class="asm"><b>假设</b>：'+esc(vd.computed.assumption)+'</span>';
+          if(mg.rows && mg.rows.length){
+            html += '<ul>';
+            mg.rows.forEach(function(ri){
+              var r = vd.computed.rows[ri];
+              html += '<li>'+esc(r.model)+'：每轮 '+esc(r.costPerRound)+'；'+esc(r.monthlyRounds)+'</li>';
+            });
+            html += '</ul>';
+          }
+          if(mg.verdict) html += '<div class="verdict">→ '+esc(vd.computed.verdict)+'</div>';
+          html += '</div>';
+        });
+        html += '</div>';
+      }
+
+      html += '</article>';
+    });
+    document.getElementById('cards').innerHTML = html;
+  })();
+
+  /* ───────── (c) 反套路自查清单（从 7 模式派生，统一「是 = 中招」极性） ───────── */
+  var QUESTIONS = [
+    {p:'unit-confusion',  q:'额度计量单位不是 token，而是 Credits、点数、相对倍数（如 4×/20×）等自定义单位？'},
+    {p:'unit-confusion',  q:'官方没有白纸黑字给出「1 单位 = 多少 token」的明确换算率？'},
+    {p:'peak-penalty',    q:'高峰时段加倍扣额度或动态限流，且你的主力使用时段正好落在高峰内？'},
+    {p:'shared-pool',     q:'编程额度与聊天、Agent、PPT、图像等其他功能（或多款模型）共用一个池，会互相挤占？'},
+    {p:'no-refund',       q:'正式条款（不是 FAQ 口径）写着不支持退款、未用完不结转、到期作废？'},
+    {p:'forced-migration',q:'官方保留单方面调整扣费系数、下线或替换套餐内模型的权利？'},
+    {p:'forced-migration',q:'当前的优惠抵扣倍率是「限时福利」，到期后同等订阅可用量会缩水？'},
+    {p:'scarcity',        q:'每日限量放售、可能售罄，或续费不锁价、按当日页面价结算？'},
+    {p:'speed-tax',       q:'「高速版 / 旗舰版」加倍消耗额度，或干脆不在套餐内、需另行付费？'},
+    {p:'unit-confusion',  q:'窗口上限、RPM/TPM、绝对额度等关键数值未公开，无法自算能跑多少轮？'}
+  ];
+  (function(){
+    var patById = {};
+    D.gotchaPatterns.forEach(function(p){ patById[p.id]=p; });
+    var ul = document.getElementById('qlist');
+    var html = '';
+    QUESTIONS.forEach(function(item, i){
+      var p = patById[item.p];
+      html += '<li><input type="checkbox" id="q'+i+'"><span class="ptag">'+p.icon+' '+esc(p.name)+'</span>'
+            + '<label class="q" for="q'+i+'">'+esc(item.q)+'</label></li>';
+    });
+    ul.innerHTML = html;
+
+    function refresh(){
+      var n = 0;
+      QUESTIONS.forEach(function(_, i){
+        var cb = document.getElementById('q'+i);
+        cb.parentNode.classList.toggle('on', cb.checked);
+        if(cb.checked) n++;
+      });
+      document.getElementById('scoreFill').style.width = (n/QUESTIONS.length*100)+'%';
+      var level;
+      if(n===0) level = '尚未作答 —— 逐条对照目标套餐条款勾选';
+      else if(n<=2) level = '雷区较少，但仍建议月付试水';
+      else if(n<=5) level = '命中多个雷区：压短订阅周期、避开年付';
+      else level = '雷区密集：除非价格极具补偿性，否则慎重';
+      document.getElementById('scoreTxt').innerHTML = '已踩中 <b>'+n+' / '+QUESTIONS.length+'</b> 条 —— '+level;
+    }
+    ul.addEventListener('change', refresh);
+    document.getElementById('resetBtn').addEventListener('click', function(){
+      QUESTIONS.forEach(function(_, i){ document.getElementById('q'+i).checked = false; });
+      refresh();
+    });
+    refresh();
+  })();
+
+  /* ───────── 页脚：快照日期 / 免责 / 来源 ───────── */
+  (function(){
+    var html = '<p><b>数据快照日期</b>：'+esc(D.meta.generatedAt)+'　|　<b>调研目的</b>：'+esc(D.meta.purpose)+'</p>'
+      + '<p><b>免责说明</b>：'+esc(D.meta.disclaimer)+'</p>'
+      + '<div class="srclist"><b>各厂来源（营销页 / 文档页分开列出）：</b><br>';
+    D.vendors.forEach(function(v){
+      html += esc(v.company)+' '+esc(v.name)+'：'
+        + '<a href="'+esc(v.marketingUrl)+'">营销页</a> · <a href="'+esc(v.docsUrl)+'">文档页</a>'
+        + '<span class="plain-sources">'+esc(v.sources.join('；'))+'</span><br>';
+    });
+    html += '</div><p>本页为设计方案原型（方案五 · 陷阱模式图鉴），完全离线渲染，全部事实数据来自 PLAN_BATTLE_DATA。</p>';
+    document.getElementById('footer').innerHTML = html;
+  })();
+})();
+</script>
+</body>
+</html>

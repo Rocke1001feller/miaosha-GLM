@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>P5 · 懒加载边缘快照</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="./index.html">← 返回总览</a>
+
+  <header class="hero">
+    <span class="kicker">方案 P5</span>
+    <h1>懒加载边缘快照：点击触发抓取 + 缓存</h1>
+    <p>底层逻辑：<strong>P2 与 P3 的混合体</strong>——不预先把 1000 篇全抓回来，而是「谁点抓谁」：首次点击时 Worker 实时抓取提取（同 P2），同时把结果写进边缘缓存（KV/R2）；之后任何人再点同一条，直接命中缓存秒开。用缓存把"实时抓取的慢"和"预抓取的浪费"都消掉。</p>
+  </header>
+
+  <div class="card">
+    <h3>点击时序</h3>
+    <div class="flow">用户在 popup 点击新闻卡片
+  → https://&lt;worker&gt;/read?u=&lt;url&gt;
+  → Worker 查缓存：命中 → 立即返回阅读页（≈0 延迟）
+  → 未命中 → 实时抓取 + 正文提取 → 写缓存（TTL 7–30 天）→ 返回
+  → 同一篇热文全网用户共享一份缓存</div>
+  </div>
+
+  <div class="card">
+    <h3>组成</h3>
+    <ul class="dots">
+      <li>在 P2 的 Worker 之上加缓存层：Cloudflare KV（读快写慢，适合读多写少）或 R2（存正文 HTML 更便宜）；缓存键 = URL 的 SHA-256。</li>
+      <li>允许列表同 P2（只服务数据集内 URL）。</li>
+      <li>可选增强：把 popup 的「预渲染热点」反过来用——后台对 24h 内 top N 条目主动预热缓存（这就退化成半个 P3）。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>成本</h3>
+    <span class="tag free">免费额度内</span>
+    <ul class="dots">
+      <li>Workers 免费档同 P2；KV 免费档（1GB、每天 10 万次读）对个人场景足够；R2 免费 10GB 更充裕。</li>
+      <li>抓取流量按真实点击发生，不为没人看的 900 篇浪费一次请求。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>优点</h3>
+    <ul class="dots">
+      <li>热文体验≈P3（秒开），冷文体验≈P2（首次 1–3s）；</li>
+      <li>抓取量最小化（只抓被点的）；</li>
+      <li>缓存自带「源站挂掉也能读」的韧性（已缓存条目）；</li>
+      <li>架构弹性好：想升级成 P3 全量快照时，缓存层直接复用。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>局限与风险</h3>
+    <ul class="dots">
+      <li>首次点击延迟真实存在（可在 popup 显示「正在获取正文…」过渡页缓解）；</li>
+      <li>缓存失效策略要想清楚：新闻正文一般不变（长 TTL 安全），但源站修改后旧缓存可能过时；</li>
+      <li>与 P2 相同的 workers.dev 大陆可达性前提，以及强反爬站点失败率。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>落地步骤</h3>
+    <ul class="dots">
+      <li>① 先做 P2（实时版）跑通；</li>
+      <li>② 加 KV/R2 缓存读写（~40 行代码）即成 P5；</li>
+      <li>③ 观察一周命中率与失败域名，决定是否需要 P3 全量快照兜底。</li>
+    </ul>
+  </div>
+
+  <footer>P5 · 用缓存消除「实时」与「预取」各自的痛</footer>
+</div>
+</body>
+</html>

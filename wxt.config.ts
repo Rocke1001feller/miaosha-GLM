@@ -42,6 +42,9 @@ export default defineConfig({
       'https://ac-api.xiaocha.online/*',
       // 迁址后的现行反代域(见 any-comments example-showcase/domain-migration.md)
       'https://ac-api.poorhub.store/*',
+      // UsageBar 桥推送主通道：SW 跨源 POST http://127.0.0.1:17389/v1/usage 带
+      // Authorization + JSON content-type，无此权限则 CORS preflight 必败（推送静默 false）。
+      'http://127.0.0.1/*',
     ],
     content_scripts: [
       {

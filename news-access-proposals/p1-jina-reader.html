@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>P1 · 现成阅读器 API（r.jina.ai）</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="./index.html">← 返回总览</a>
+
+  <header class="hero">
+    <span class="kicker">方案 P1 · 已弃用</span>
+    <h1>现成阅读器 API：r.jina.ai</h1>
+    <p style="border:1.5px solid #d97706;background:#fef3c7;padding:8px 12px;border-radius:6px;margin-top:10px;font-size:13px">
+      ⚠️ 2026-07-19 实测后弃用：Techmeme 等站被 Cloudflare 403/验证码拦截，部分页面返回链接残渣，体验不达标。
+      本页仅作为历史调研记录保留，最终采用 P3 快照模式。
+    </p>
+    <p>底层逻辑：<strong>零自建</strong>——不建任何中继，把 popup 里的原文链接改写成第三方公共 Reader 服务的 URL，由它去境外取内容、抽正文、返回干净文本。我们只做「链接改写」这一件事。</p>
+  </header>
+
+  <div class="card">
+    <h3>点击时序</h3>
+    <div class="flow">用户在 popup 点击新闻卡片
+  → NewsCard 把 https://techcrunch.com/xxx 改写为
+    https://r.jina.ai/https://techcrunch.com/xxx
+  → 浏览器新标签打开（jina 服务器在境外抓取源站）
+  → 用户看到 Markdown 阅读版正文</div>
+  </div>
+
+  <div class="card">
+    <h3>改动量（全部）</h3>
+    <ul class="dots">
+      <li><code>NewsCard.svelte</code>：<code>href</code> 计算时加一层包装，例如 <code>wrap(url) = 'https://r.jina.ai/' + url</code>。可视情况只对「已知不可达源」生效（域名黑名单）或全量生效。</li>
+      <li>没有后端、没有密钥、没有部署。</li>
+    </ul>
+    <div class="logic">这是「充分利用市场已有资源」的极致：Jina Reader 是专门做「URL → 干净正文」的公共服务，相当于免费替你维护了一个全球抓取集群。</div>
+  </div>
+
+  <div class="card">
+    <h3>成本</h3>
+    <span class="tag free">免费档可用</span>
+    <ul class="dots">
+      <li>匿名调用有速率限制（约 20 RPM 量级，以官方为准）；另有免费 API key 档（额度更高，需注册）。</li>
+      <li>对单人/小团队 popup 场景，免费额度基本用不完。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>优点</h3>
+    <ul class="dots">
+      <li><b>30 分钟上线</b>，立即验证整个思路是否成立；</li>
+      <li>正文提取质量好（为 LLM 场景打磨），天然适配窄屏阅读；</li>
+      <li>无任何滥用风险——公共服务由第三方兜底。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>局限与风险</h3>
+    <ul class="dots">
+      <li><b>最大未知数：r.jina.ai 在中国大陆的实际可达性</b>——必须实测（不同省份/运营商差异大）。这正是 P1 要先上的原因：它用最便宜的方式替 P2/P4 探路（如果 jina 都不通，CF Workers 的 workers.dev 大概率也够呛）。</li>
+      <li>第三方依赖：限额、条款变更、隐私（用户读什么会经过第三方）。</li>
+      <li>提取失败时没有兜底（可降级为直接打开原链接，让用户碰运气）。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>验证清单（上线当天完成）</h3>
+    <ul class="dots">
+      <li>① 大陆网络直接开 <code>https://r.jina.ai/https://techcrunch.com/...</code> 看通不通、多快；</li>
+      <li>② 抽样 20 个 popup 里实际出现的域名，统计提取成功率；</li>
+      <li>③ 记录哪些源失败 → 这份清单就是 P2/P3 的攻坚列表。</li>
+    </ul>
+  </div>
+
+  <footer>P1 · 验证先行 · 改动最小</footer>
+</div>
+</body>
+</html>

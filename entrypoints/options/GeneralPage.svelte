@@ -17,6 +17,10 @@
     fireStore,
     type FireConfig,
   } from '../../lib/settings/fire';
+  import {
+    bridgeConfigStore,
+    type BridgeConfig,
+  } from '../../lib/usage/bridge-push';
 
   let loaded = $state(false);
 
@@ -41,6 +45,13 @@
   let fireSaving = $state(false);
   let fireSaveMessage = $state('');
 
+  let bridgeEnabled = $state(false);
+  let bridgePort = $state(17389);
+  let bridgeToken = $state('');
+  let committedBridge = $state<BridgeConfig | null>(null);
+  let bridgeSaving = $state(false);
+  let bridgeSaveMessage = $state('');
+
   const TIMEZONES = [
     { value: 'Asia/Shanghai',    label: '🇨🇳 北京时间 (UTC+8)' },
     { value: 'Asia/Tokyo',       label: '🇯🇵 东京时间 (UTC+9)' },
@@ -57,7 +68,8 @@
       saleTimeStore.getAlarmStatus(),
       captchaStore.get(),
       fireStore.get(),
-    ]).then(([s, status, captcha, fire]) => {
+      bridgeConfigStore.get(),
+    ]).then(([s, status, captcha, fire, bridge]) => {
       saleHour = s.hour;
       saleMinute = s.minute;
       saleSecond = s.second;
@@ -70,6 +82,10 @@
       committedCaptcha = { ...captcha };
       burstIntervalMs = fire.burstIntervalMs;
       committedFireConfig = { ...fire };
+      bridgeEnabled = bridge.enabled;
+      bridgePort = bridge.port;
+      bridgeToken = bridge.token;
+      committedBridge = { ...bridge };
       loaded = true;
     });
   });
@@ -227,6 +243,45 @@
   async function handleFireReset() {
     burstIntervalMs = FIRE_CONFIG_DEFAULT.burstIntervalMs;
     await handleFireConfirm();
+  }
+
+  function currentBridgeConfig(): BridgeConfig {
+    return {
+      enabled: bridgeEnabled,
+      port: Math.max(1, Math.min(65535, Math.round(Number(bridgePort)) || 17389)),
+      token: bridgeToken.trim(),
+    };
+  }
+
+  function sameBridgeConfig(a: BridgeConfig | null, b: BridgeConfig): boolean {
+    return !!a && a.enabled === b.enabled && a.port === b.port && a.token === b.token;
+  }
+
+  function isBridgeDirty(): boolean {
+    return !sameBridgeConfig(committedBridge, currentBridgeConfig());
+  }
+
+  async function handleBridgeConfirm() {
+    const config = currentBridgeConfig();
+    bridgeSaving = true;
+    bridgeSaveMessage = '';
+    try {
+      await bridgeConfigStore.set(config);
+      committedBridge = { ...config };
+      bridgePort = config.port;
+      bridgeSaveMessage = config.enabled
+        ? `已生效：推送到 127.0.0.1:${config.port}（平时 60s，临近重置加速 30s）`
+        : '已停用 UsageBar 推送';
+    } finally {
+      bridgeSaving = false;
+    }
+  }
+
+  async function handleBridgeReset() {
+    bridgeEnabled = false;
+    bridgePort = 17389;
+    bridgeToken = '';
+    await handleBridgeConfirm();
   }
 </script>
 
@@ -402,6 +457,62 @@
           </button>
           <button class="btn-reset" type="button" onclick={handleFireReset}>
             ↺ 重置默认 <span class="reset-hint">{FIRE_CONFIG_DEFAULT.burstIntervalMs}ms</span>
+          </button>
+        </div>
+      </div>
+    {:else}
+      <div class="loading-skeleton">
+        <div class="skeleton-row"></div>
+      </div>
+    {/if}
+  </section>
+  <section class="section-card">
+    <div class="section-heading">
+      <span class="accent-bar"></span>
+      <h3>&#128202; UsageBar 桥配对</h3>
+    </div>
+    <p class="section-note">把四平台用量缓存推送到本机 UsageBar 菜单栏 app（POST http://127.0.0.1:端口/v1/usage，Bearer 令牌鉴权）。平时每 60 秒推送一次；任一平台额度临近重置（±15 分钟）时自动加速到每 30 秒。端口与令牌需与 macOS app 侧配对一致；app 未运行时推送静默失败，不影响扩展。</p>
+
+    {#if loaded}
+      <div class="sale-time-form">
+        <div class="form-row sound-toggle-row">
+          <label class="sound-switch" for="bridge-enabled">
+            <input id="bridge-enabled" type="checkbox" bind:checked={bridgeEnabled} />
+            <span class="switch-track"></span>
+            <span class="switch-label">{bridgeEnabled ? '📡 推送已开启' : '📴 推送已关闭'}</span>
+          </label>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="bridge-port">端口</label>
+            <input id="bridge-port" type="number" class="form-select form-input-num" min="1" max="65535" step="1" bind:value={bridgePort} />
+          </div>
+          <div class="form-group" style="flex: 2;">
+            <label class="form-label" for="bridge-token">配对令牌（Bearer Token）</label>
+            <input id="bridge-token" type="text" class="form-select form-input-num" placeholder="粘贴 UsageBar app 显示的令牌" bind:value={bridgeToken} />
+          </div>
+        </div>
+
+        <div class="next-sale-preview">
+          <span class="preview-label">推送目标</span>
+          <span class="preview-value">
+            <span class="highlight-val">http://127.0.0.1:{currentBridgeConfig().port}/v1/usage</span>
+          </span>
+          {#if isBridgeDirty()}
+            <span class="dirty-pill">待确认</span>
+          {/if}
+        </div>
+
+        <div class="sale-time-actions">
+          {#if bridgeSaveMessage}
+            <span class="save-message">{bridgeSaveMessage}</span>
+          {/if}
+          <button class="btn-confirm" type="button" onclick={handleBridgeConfirm} disabled={bridgeSaving || !isBridgeDirty()}>
+            {bridgeSaving ? '保存中...' : '确定生效'}
+          </button>
+          <button class="btn-reset" type="button" onclick={handleBridgeReset}>
+            ↺ 重置默认 <span class="reset-hint">关闭 · 17389</span>
           </button>
         </div>
       </div>

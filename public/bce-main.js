@@ -13,7 +13,7 @@ var BCE_VERSION =
     document.currentScript &&
     document.currentScript.dataset &&
     document.currentScript.dataset.version) ||
-  '2.0.0';
+  '1.4.2';
 
 var BCE_CONFIG = {
   platform: 'baidu-tokenplan',

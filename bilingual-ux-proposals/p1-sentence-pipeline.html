@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>方案一 · 句级翻译契约</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="./index.html">← 返回总览</a>
+
+  <header class="hero">
+    <span class="kicker">方案一（推荐主线）</span>
+    <h1>句级翻译契约：让「句」成为翻译与存储单位</h1>
+    <p>底层逻辑：<strong>对齐问题在数据源头解决</strong>。管线不再按"块"翻译，而是把每个块拆成句，逐句调用 gtx 翻译，快照里直接存句对。渲染层拿到 <code>{en, zh}</code> 对就能渲染，永远不需要猜测哪句对哪句。</p>
+  </header>
+
+  <div class="card">
+    <h3>数据流</h3>
+    <div class="flow">snapshot 抽取 content_html（已有）
+  → 遍历块级元素 → 块内文本分句（英文句法正则：. ! ? ; : 边界 + 缩写保护）
+  → 逐句查缓存（sha1）/ 调 gtx → 句对 {en, zh}
+  → 快照契约：
+    blocks: [{ html_en: "&lt;p&gt;...&lt;/p&gt;", sentences: [{en, zh}, ...] }, ...]
+  → reader 渲染：
+    双语·句：英文原句（保留内联标记）→ 下接灰色中文句
+    双语·段：块 html_en → 下接整段中文（由 sentences 拼装）
+    中文：zh 拼接；EN：html_en 原样</div>
+  </div>
+
+  <div class="card">
+    <h3>成本与缓存</h3>
+    <span class="tag free">免费（gtx）</span>
+    <ul class="dots">
+      <li>请求数约为段级的 2.5–3.5 倍（句均拆分），但<b>缓存键改为句级后复用率反而更高</b>（同一句子跨文章/跨天复用）；</li>
+      <li>已有段级缓存直接平移：句缓存可先用段缓存兜底（整段文本相同则整段跳过）；</li>
+      <li>6000 请求/次预算不变，首轮覆盖大部分，剩余随缓存滚动补齐。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>优点</h3>
+    <ul class="dots">
+      <li>对齐 100% 正确——没有启发式，没有错位；</li>
+      <li>reader 大幅简化：从"双 DOM 对齐渲染"退化为"按契约渲染"，还能白拿段级视图；</li>
+      <li>句级翻译质量通常更好（短文本机翻更准）；</li>
+      <li>句级缓存是全项目可复用资产（未来 AI 摘要也能用）。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>局限与对策</h3>
+    <ul class="dots">
+      <li>英文分句边界（Mr./Dr./U.S. 等缩写、引号内句号）——用成熟的分句正则 + 缩写白名单，错误率 <2%，错了也只是两句并一句，不影响阅读；</li>
+      <li>中文句不保留内联链接（句是纯文本）——英文句保留原始标记，链接入口仍在；中文整段视图可由句拼回；</li>
+      <li>快照体积再增 ~30%——data 分支容量仍充裕。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>落地步骤</h3>
+    <ul class="dots">
+      <li>① fulltext.ts 增加分句器 + 逐句翻译（复用 gtx/缓存/预算）；</li>
+      <li>② snapshot 契约输出 blocks 句对；reader 重写为契约驱动渲染 + 粒度开关；</li>
+      <li>③ 跑一轮验证质量与请求量，再全量放开。</li>
+    </ul>
+  </div>
+
+  <footer>方案一 · 对齐在源头，渲染零猜测</footer>
+</div>
+</body>
+</html>
