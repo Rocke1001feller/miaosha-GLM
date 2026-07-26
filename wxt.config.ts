@@ -34,10 +34,14 @@ export default defineConfig({
       '*://rocke1001feller.github.io/*',
       // ai-news 国内反代镜像（github.io 不可达时回退）
       'https://xiaocha.online/*',
+      // ai-news 现行反代(根路径子域名,回退链第二级)
+      'https://ai-news.poorhub.store/*',
       // 买家秀 iframe(public/buyer-show/)只读拉取 any-comments 聚合数据
       'https://any-comments-worker.poorhub.workers.dev/*',
       // any-comments 国内反代（vendored popup 的 CN 构建 + 现场层 field.js 读写都走这里）
       'https://ac-api.xiaocha.online/*',
+      // 迁址后的现行反代域(见 any-comments example-showcase/domain-migration.md)
+      'https://ac-api.poorhub.store/*',
     ],
     content_scripts: [
       {
