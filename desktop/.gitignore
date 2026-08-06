@@ -1,0 +1,9 @@
+# Swift / Xcode
+.build/
+.swiftpm/
+DerivedData/
+xcuserdata/
+*.xcuserstate
+CodingPlanAssistant.xcodeproj/
+# macOS
+.DS_Store
