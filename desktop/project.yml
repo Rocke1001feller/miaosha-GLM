@@ -1,0 +1,39 @@
+name: CodingPlanAssistant
+options:
+  bundleIdPrefix: app.codingplanassistant
+targets:
+  CodingPlanAssistant:
+    type: application
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: CodingPlanAssistant/Sources
+      - path: CodingPlanAssistant/Assets.xcassets
+      - path: CodingPlanAssistant/Resources
+    dependencies:
+      - package: UsageCore
+      - package: UsageUI
+      - sdk: ServiceManagement.framework
+    info:
+      path: CodingPlanAssistant/Info.plist
+      properties:
+        LSUIElement: true
+        CFBundleName: CodingPlanAssistant
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "1"
+    settings:
+      base:
+        SWIFT_VERSION: "5.9"
+        MARKETING_VERSION: "0.1.0"
+        CODE_SIGN_IDENTITY: "-"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+      configs:
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: app.codingplanassistant.mac.dev
+        Release:
+          PRODUCT_BUNDLE_IDENTIFIER: app.codingplanassistant.mac
+packages:
+  UsageCore:
+    path: Packages/UsageCore
+  UsageUI:
+    path: Packages/UsageUI

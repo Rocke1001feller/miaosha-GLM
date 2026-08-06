@@ -1,0 +1,35 @@
+{
+  "name": "coding-plan-assistant-web",
+  "version": "3.0.0",
+  "description": "智能 Coding Plan 助手浏览器扩展（多平台秒杀 / 买家秀 / AI 新闻 / Token 用量）",
+  "scripts": {
+    "dev": "wxt",
+    "build:overlay": "node scripts/build-overlay.js",
+    "build": "node scripts/build-overlay.js && wxt build && node scripts/verify-no-minifier-collision.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "zip": "pnpm build && node scripts/zip-prepare.mjs"
+  },
+  "license": "ISC",
+  "packageManager": "pnpm@10.33.0",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^7.1.2",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/svelte": "^5.3.1",
+    "@testing-library/user-event": "^14.6.1",
+    "@vitest/ui": "^4.1.7",
+    "@wxt-dev/module-svelte": "^2.0.5",
+    "happy-dom": "^20.9.0",
+    "svelte": "^5.55.10",
+    "terser": "^5.48.0",
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.7",
+    "wxt": "^0.20.26"
+  }
+}
