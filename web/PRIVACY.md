@@ -89,8 +89,8 @@ constitutes acceptance of the updated policy.
 
 ## Contact
 
-- **Issues:** https://github.com/Rocke1001feller/miaosha-GLM/issues
-- **Discussions:** https://github.com/Rocke1001feller/miaosha-GLM/discussions
+- **Issues:** https://github.com/Rocke1001feller/coding-plan-assistant/issues
+- **Discussions:** https://github.com/Rocke1001feller/coding-plan-assistant/discussions
 
 We are **not affiliated with** bigmodel.cn or Zhipu AI. All trademarks and
 service marks are the property of their respective owners.

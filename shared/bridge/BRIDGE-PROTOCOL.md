@@ -1,10 +1,10 @@
 # Coding Plan Assistant ↔ Chrome 扩展 桥接协议（v1）
 
-本文档是 Coding Plan Assistant macOS 菜单栏应用与其配套 Chrome 扩展（miaosha-GLM）之间的**桥接接口契约**。
-两个仓库独立演进，契约由两侧各自的契约测试强制执行：
+本文档是 Coding Plan Assistant macOS 菜单栏应用（`desktop/`）与其配套浏览器扩展（本仓 `web/`）之间的**桥接接口契约**。
+两侧同仓演进，契约由两侧各自的契约测试强制执行：
 
-- App 侧：`Packages/UsageCore/Tests/UsageCoreTests/BridgeContractTests.swift`
-- 扩展侧：`tests/unit/usage/bridge-contract.test.ts`
+- App 侧：`desktop/Packages/UsageCore/Tests/UsageCoreTests/BridgeContractTests.swift`
+- 扩展侧：`web/tests/unit/usage/bridge-contract.test.ts`
 - 共享夹具：`fixtures/snapshot-v1.json`（两侧测试都消费同一份文件）
 
 ## 谁是生产者 / 消费者

@@ -8,18 +8,18 @@ Coding Plan Assistant 是「app + Chrome 扩展」套装：扩展抓取用量并
 
 | 产物 | 构建命令 | 输出 | 签名 |
 |---|---|---|---|
-| macOS app | `mac-os-only-fans/CodingPlanAssistant/scripts/release-mac.sh 1.1.0` | `mac-os-only-fans/CodingPlanAssistant/.build/CodingPlanAssistant-1.1.0.zip` | ad-hoc（未公证） |
-| Chrome 扩展 | 仓库根 `pnpm zip` | `output/miaosha-glm-<版本>-chrome.zip` | 无（用户开发者模式加载） |
+| macOS app | `desktop/scripts/release-mac.sh 1.1.0` | `desktop/.build/CodingPlanAssistant-1.1.0.zip` | ad-hoc（未公证） |
+| Chrome 扩展 | `web/` 下 `pnpm zip` | `web/output/coding-plan-assistant-web-<版本>-chrome.zip` | 无（用户开发者模式加载） |
 
 构建前置：Xcode（≥15）、xcodegen、pnpm（本机用 `/Users/separationofconcerns/Library/pnpm/pnpm`）。CLT 机器脚本已自动处理 `DEVELOPER_DIR`。
 
 发布前回归基线（必须全绿）：
 
 ```bash
-/Users/separationofconcerns/Library/pnpm/pnpm vitest run                       # 扩展 245
-(cd mac-os-only-fans/CodingPlanAssistant/Packages/UsageCore && swift test)               # 56
-(cd mac-os-only-fans/CodingPlanAssistant/Packages/UsageUI && swift test)                 # 11
-mac-os-only-fans/CodingPlanAssistant/scripts/dev-mac.sh                                  # Debug 构建
+(cd web && /Users/separationofconcerns/Library/pnpm/pnpm vitest run)                        # 扩展 245
+(cd desktop/Packages/UsageCore && swift test)                # 56
+(cd desktop/Packages/UsageUI && swift test)                  # 11
+desktop/scripts/dev-mac.sh                                   # Debug 构建
 ```
 
 ## 发布步骤（GitHub Releases，推荐）
@@ -28,7 +28,7 @@ mac-os-only-fans/CodingPlanAssistant/scripts/dev-mac.sh                         
 2. 在 GitHub 仓库 → Releases → Draft a new release：选该 tag，标题 `Coding Plan Assistant v1.1.0`。
 3. 上传两个 zip 作为 Assets：
    - `CodingPlanAssistant-1.1.0.zip`（macOS app）
-   - `miaosha-glm-1.4.2-chrome.zip`（配套扩展，版本号以 package.json 为准）
+   - `coding-plan-assistant-web-3.0.0-chrome.zip`（配套扩展，版本号以 web/package.json 为准）
 4. Release notes 里粘贴 [USER-GUIDE.md](USER-GUIDE.md) 的「安装三步」摘要，并链接完整文档。
 5. Publish。
 

@@ -74,16 +74,16 @@
 
 ### 方式一：下载预编译包（推荐）
 
-1. 下载 zip：[miaosha-glm-2.0.0-chrome.zip](https://github.com/Rocke1001feller/miaosha-GLM/releases/download/v2.0.0/miaosha-glm-2.0.0-chrome.zip)
-2. 解压（macOS 双击；Windows 右键「全部解压缩」；Linux `unzip miaosha-glm-2.0.0-chrome.zip`）
+1. 下载 zip：[coding-plan-assistant-web-3.0.0-chrome.zip](https://github.com/Rocke1001feller/coding-plan-assistant/releases/download/v3.0.0/coding-plan-assistant-web-3.0.0-chrome.zip)
+2. 解压（macOS 双击；Windows 右键「全部解压缩」；Linux `unzip coding-plan-assistant-web-3.0.0-chrome.zip`）
 3. 打开 `chrome://extensions`，开启右上角「开发者模式」
 4. 点击「加载已解压的扩展程序」，选择解压后的文件夹
 
 ### 方式二：从源码构建
 
 ```bash
-git clone https://github.com/Rocke1001feller/miaosha-GLM.git
-cd miaosha-GLM
+git clone https://github.com/Rocke1001feller/coding-plan-assistant.git
+cd coding-plan-assistant/web
 pnpm install
 pnpm build        # 产物在 output/chrome-mv3/
 ```
@@ -133,7 +133,7 @@ pnpm build        # 产物在 output/chrome-mv3/
 pnpm dev          # 开发模式（HMR，扩展自动重载）
 pnpm build        # 生产构建（overlay + wxt + 压缩器碰撞校验）
 pnpm test         # 全部测试（单元 + 组件）
-pnpm zip          # 构建并打包 output/miaosha-glm-<version>-chrome.zip
+pnpm zip          # 构建并打包 output/coding-plan-assistant-web-<version>-chrome.zip
 ```
 
 测试分 5 层：纯逻辑 → 存储层 → MAIN world JS → Svelte 组件 → Chrome API 集成，详见 `docs/testing.md`。

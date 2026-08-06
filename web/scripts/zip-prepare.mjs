@@ -14,7 +14,8 @@ const OUTPUT_DIR = 'output';
 const BUILD_DIR_NAME = 'chrome-mv3';
 const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
 const VERSION = pkg.version;
-const FINAL_ZIP = `${OUTPUT_DIR}/miaosha-glm-${VERSION}-chrome.zip`;
+const NAME = pkg.name;
+const FINAL_ZIP = `${OUTPUT_DIR}/${NAME}-${VERSION}-chrome.zip`;
 const BUILD_DIR = `${OUTPUT_DIR}/${BUILD_DIR_NAME}`;
 
 function main() {
@@ -30,7 +31,7 @@ function main() {
   // (same layout as WXT's own zip output).
   console.log(`Creating ${FINAL_ZIP} from ${BUILD_DIR}...`);
   execSync(
-    `cd "${BUILD_DIR}" && zip -r -q "../miaosha-glm-${VERSION}-chrome.zip" .`,
+    `cd "${BUILD_DIR}" && zip -r -q "../${NAME}-${VERSION}-chrome.zip" .`,
     { stdio: 'inherit' },
   );
 

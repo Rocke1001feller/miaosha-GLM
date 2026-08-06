@@ -1,6 +1,6 @@
 {
-  "name": "miaosha-GLM",
-  "version": "2.0.0",
+  "name": "coding-plan-assistant-web",
+  "version": "3.0.0",
   "description": "智能 Coding Plan 助手浏览器扩展（多平台秒杀 / 买家秀 / AI 新闻 / Token 用量）",
   "scripts": {
     "dev": "wxt",

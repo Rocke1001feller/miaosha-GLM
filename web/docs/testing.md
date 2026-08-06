@@ -83,7 +83,7 @@ batch-preview API → auth 捕获 → 产品矩阵构建 → 产品卡片 UI →
 ## 2. 文件拓扑结构
 
 ```
-miaosha-GLM/
+web/
 ├── vitest.config.ts                 ← Vitest 主配置（WxtVitest + Svelte 插件）
 │
 ├── tests/

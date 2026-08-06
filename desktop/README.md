@@ -2,7 +2,7 @@
 
 macOS 菜单栏用量监控：把 Kimi Code、小米 MiMo、MiniMax、火山引擎四个平台的额度用量钉在菜单栏、浮层与桌面浮窗上。
 
-**完全独立运行**：无需任何浏览器扩展——MiniMax / 小米 MiMo / 火山引擎经 Chrome cookie 原生直取，Kimi Code 经 Chrome localStorage（LevelDB）读取 access_token。配套 Chrome 扩展（miaosha-GLM）只是**可选**的数据增强通道（127.0.0.1 本地桥推送，契约见 [../shared/bridge/BRIDGE-PROTOCOL.md](../shared/bridge/BRIDGE-PROTOCOL.md)）。
+**完全独立运行**：无需任何浏览器扩展——MiniMax / 小米 MiMo / 火山引擎经 Chrome cookie 原生直取，Kimi Code 经 Chrome localStorage（LevelDB）读取 access_token。配套浏览器扩展（本仓 `web/` 目录）只是**可选**的数据增强通道（127.0.0.1 本地桥推送，契约见 [../shared/bridge/BRIDGE-PROTOCOL.md](../shared/bridge/BRIDGE-PROTOCOL.md)）。
 
 > 当前版本：**v1.4.1**。版本历史：`git tag -l`（Release zip 由 `scripts/release-mac.sh <版本>` 产出）。
 >

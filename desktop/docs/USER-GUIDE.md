@@ -5,7 +5,7 @@
 ## 你需要拿到两个文件
 
 - `CodingPlanAssistant-<版本>.zip`（macOS 菜单栏 app）
-- `miaosha-glm-<版本>-chrome.zip`（配套 Chrome 扩展）
+- `coding-plan-assistant-web-<版本>-chrome.zip`（配套浏览器扩展，本仓 `web/` 目录）
 
 获取途径：团队内部分发链接 / GitHub Releases 页面（具体地址询问分发者）。
 
@@ -26,7 +26,7 @@
 
 ### 第 2 步：安装配套 Chrome 扩展
 
-1. 解压 `miaosha-glm-<版本>-chrome.zip`，得到一个文件夹（建议放到固定位置，如 `~/Extensions/miaosha-glm`，**不要放下载目录后随手删掉**——Chrome 每次启动都要读它）。
+1. 解压 `coding-plan-assistant-web-<版本>-chrome.zip`，得到一个文件夹（建议放到固定位置，如 `~/Extensions/coding-plan-assistant-web`，**不要放下载目录后随手删掉**——Chrome 每次启动都要读它）。
 2. Chrome 地址栏输入 `chrome://extensions` 回车，打开右上角「开发者模式」。
 3. 点「加载已解压的扩展程序」，选择刚才解压的文件夹。扩展图标（Z 字样「秒杀助手」）出现在工具栏。
 
