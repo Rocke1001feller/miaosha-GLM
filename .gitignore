@@ -1,0 +1,26 @@
+# ---- 通用 ----
+.DS_Store
+
+# ---- web/（Node / WXT） ----
+node_modules
+.wxt
+.output
+output
+.uv_python
+.uv_cache
+.playwright-mcp
+
+# ---- desktop/（Swift / Xcode） ----
+.build/
+.swiftpm/
+DerivedData/
+xcuserdata/
+*.xcuserstate
+desktop/CodingPlanAssistant.xcodeproj/
+
+# ---- 本地会话与工作资料（不进入开源仓库） ----
+.tmp/
+.superpowers/
+.claude/skills/
+worktrees/
+worktree/
