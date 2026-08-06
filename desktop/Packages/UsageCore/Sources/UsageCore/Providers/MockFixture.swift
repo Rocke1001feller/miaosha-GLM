@@ -1,6 +1,6 @@
 import Foundation
 
-/// 编译期内嵌的桥快照夹具，与 docs/bridge-fixtures/snapshot-v1.json **逐字节一致**
+/// 编译期内嵌的桥快照夹具，与 shared/bridge/fixtures/snapshot-v1.json **逐字节一致**
 /// （含末尾换行）。由该夹具文件机械生成（生成/校验命令见 docs/dev-notes-task3.md），
 /// 夹具更新后须重新生成本文件；MockProviderTests 内有逐字节一致的防漂移测试。
 /// 选内嵌字符串而非 Bundle resource：app target 由 xcodegen 生成、未配置资源拷贝，

@@ -5,7 +5,7 @@
 
 - App 侧：`Packages/UsageCore/Tests/UsageCoreTests/BridgeContractTests.swift`
 - 扩展侧：`tests/unit/usage/bridge-contract.test.ts`
-- 共享夹具：`docs/bridge-fixtures/snapshot-v1.json`（两侧测试都消费同一份文件）
+- 共享夹具：`fixtures/snapshot-v1.json`（两侧测试都消费同一份文件）
 
 ## 谁是生产者 / 消费者
 
@@ -88,7 +88,7 @@
 3. **未知 status 按 unavailable 处理**（见上表），生产者新增 status 值不需要消费者同步发版。
 4. 任何破坏性变更（改字段语义、改单位、改认证方式、改路径结构）必须走**新版本路径**
    `/v2/usage`，旧路径继续可用至少一个过渡周期。
-5. 夹具 `docs/bridge-fixtures/snapshot-v1.json` 是 v1 的权威样例；schema 演进时同步更新夹具与两侧契约测试。
+5. 夹具 `fixtures/snapshot-v1.json` 是 v1 的权威样例；schema 演进时同步更新夹具与两侧契约测试。
 
 ## 版本
 

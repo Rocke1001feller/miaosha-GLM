@@ -2,19 +2,20 @@ import Testing
 import Foundation
 @testable import UsageCore
 
-/// 桥协议契约测试：消费共享夹具 docs/bridge-fixtures/snapshot-v1.json，
-/// 验证 BridgeSnapshot.decode 的行为与 docs/BRIDGE-PROTOCOL.md 一致。
+/// 桥协议契约测试：消费共享夹具 shared/bridge/fixtures/snapshot-v1.json，
+/// 验证 BridgeSnapshot.decode 的行为与 shared/bridge/BRIDGE-PROTOCOL.md 一致。
 @Suite("BridgeContract")
 struct BridgeContractTests {
-  /// 夹具路径：本文件位于 Packages/UsageCore/Tests/UsageCoreTests/，上溯四级为仓库根。
+  /// 夹具路径：本文件位于 desktop/Packages/UsageCore/Tests/UsageCoreTests/，上溯六级为 monorepo 根。
   private static func fixtureData() throws -> Data {
     let repoRoot = URL(fileURLWithPath: #filePath)
       .deletingLastPathComponent() // UsageCoreTests
       .deletingLastPathComponent() // Tests
       .deletingLastPathComponent() // UsageCore
       .deletingLastPathComponent() // Packages
-      .deletingLastPathComponent() // repo root
-    let url = repoRoot.appendingPathComponent("docs/bridge-fixtures/snapshot-v1.json")
+      .deletingLastPathComponent() // desktop
+      .deletingLastPathComponent() // monorepo root
+    let url = repoRoot.appendingPathComponent("shared/bridge/fixtures/snapshot-v1.json")
     return try Data(contentsOf: url)
   }
 

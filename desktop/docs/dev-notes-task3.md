@@ -13,7 +13,7 @@ mock 只占兜底路径。
 
 新增：
 - `Packages/UsageCore/Sources/UsageCore/Providers/MockFixture.swift` — 编译期内嵌夹具，
-  与 `docs/bridge-fixtures/snapshot-v1.json` **逐字节一致**（含末尾换行，Swift 多行
+  与 `../shared/bridge/fixtures/snapshot-v1.json` **逐字节一致**（含末尾换行，Swift 多行
   raw 字符串不吞行尾换行，故显式 `+ "\n"` 补齐）。
 - `Packages/UsageCore/Sources/UsageCore/Providers/MockProvider.swift` —
   `public final class MockProvider: UsageProvider`（`id = "mock-fixture"`）。
@@ -36,7 +36,7 @@ mock 只占兜底路径。
   否则维持原 `open` 行为。
 - `README.md` — 新增「独立开发（无扩展 / 无 Chrome 会话）」段（位置：安装之后、
   配对之前）：三步上手（clone → `swift test` → `USAGEBAR_MOCK=1 ./scripts/dev-mac.sh run`），
-  指明 `docs/BRIDGE-PROTOCOL.md` 是关于外部数据源唯一需要读的文档、桥本身可选；
+  指明 `../shared/bridge/BRIDGE-PROTOCOL.md` 是关于外部数据源唯一需要读的文档、桥本身可选；
   「已知限制」补一条 mock 仅供开发、数据为夹具定值。
 
 ## 关键决策：内嵌字符串而非 Bundle resource
@@ -55,7 +55,7 @@ app target 由 xcodegen（`project.yml`）确定性生成，sources 仅 `UsageBa
 ```bash
 python3 - <<'EOF'
 from pathlib import Path
-fixture = Path("docs/bridge-fixtures/snapshot-v1.json").read_text(encoding="utf-8")
+fixture = Path("../shared/bridge/fixtures/snapshot-v1.json").read_text(encoding="utf-8")
 assert '"""#' not in fixture
 body = fixture[:-1] if fixture.endswith("\n") else fixture
 trailing = ' + "\\n"' if fixture.endswith("\n") else ""
@@ -64,7 +64,7 @@ EOF
 ```
 
 校验（本轮已执行）：从 `MockFixture.swift` 正则提取 `#"""` 与 `"""#` 间内容并补回
-`+ "\n"` 语义，与 `docs/bridge-fixtures/snapshot-v1.json` 全文 `==` 比较 →
+`+ "\n"` 语义，与 `../shared/bridge/fixtures/snapshot-v1.json` 全文 `==` 比较 →
 **byte-identical OK, 1377 bytes**。另有常驻防漂移测试
 `内嵌夹具与共享夹具文件逐字节一致` 在每次 `swift test` 强校验同一断言。
 

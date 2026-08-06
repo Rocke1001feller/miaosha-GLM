@@ -2,19 +2,20 @@ import Testing
 import Foundation
 @testable import UsageCore
 
-/// MockProvider 契约：返回值与共享夹具 docs/bridge-fixtures/snapshot-v1.json 一致
+/// MockProvider 契约：返回值与共享夹具 shared/bridge/fixtures/snapshot-v1.json 一致
 /// （状态映射预期复用 BridgeContractTests），且内嵌夹具与磁盘夹具逐字节不漂移。
 @Suite("MockProvider")
 struct MockProviderTests {
-  /// 与 BridgeContractTests 相同：本文件上溯五级为仓库根。
+  /// 与 BridgeContractTests 相同：本文件上溯六级为 monorepo 根。
   private static func fixtureData() throws -> Data {
     let repoRoot = URL(fileURLWithPath: #filePath)
       .deletingLastPathComponent() // UsageCoreTests
       .deletingLastPathComponent() // Tests
       .deletingLastPathComponent() // UsageCore
       .deletingLastPathComponent() // Packages
-      .deletingLastPathComponent() // repo root
-    return try Data(contentsOf: repoRoot.appendingPathComponent("docs/bridge-fixtures/snapshot-v1.json"))
+      .deletingLastPathComponent() // desktop
+      .deletingLastPathComponent() // monorepo root
+    return try Data(contentsOf: repoRoot.appendingPathComponent("shared/bridge/fixtures/snapshot-v1.json"))
   }
 
   @Test func mock快照返回夹具四平台与状态() async throws {
@@ -52,7 +53,7 @@ struct MockProviderTests {
   }
 
   @Test func 内嵌夹具与共享夹具文件逐字节一致() throws {
-    // 防漂移：改 docs/bridge-fixtures/snapshot-v1.json 后须重新生成 MockFixture.swift
+    // 防漂移：改 shared/bridge/fixtures/snapshot-v1.json 后须重新生成 MockFixture.swift
     #expect(Data(MockFixture.snapshotV1JSON.utf8) == (try Self.fixtureData()))
   }
 }

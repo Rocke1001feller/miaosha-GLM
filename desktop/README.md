@@ -2,7 +2,7 @@
 
 macOS 菜单栏用量监控：把 Kimi Code、小米 MiMo、MiniMax、火山引擎四个平台的额度用量钉在菜单栏、浮层与桌面浮窗上。
 
-**完全独立运行**：无需任何浏览器扩展——MiniMax / 小米 MiMo / 火山引擎经 Chrome cookie 原生直取，Kimi Code 经 Chrome localStorage（LevelDB）读取 access_token。配套 Chrome 扩展（miaosha-GLM）只是**可选**的数据增强通道（127.0.0.1 本地桥推送，契约见 [docs/BRIDGE-PROTOCOL.md](docs/BRIDGE-PROTOCOL.md)）。
+**完全独立运行**：无需任何浏览器扩展——MiniMax / 小米 MiMo / 火山引擎经 Chrome cookie 原生直取，Kimi Code 经 Chrome localStorage（LevelDB）读取 access_token。配套 Chrome 扩展（miaosha-GLM）只是**可选**的数据增强通道（127.0.0.1 本地桥推送，契约见 [../shared/bridge/BRIDGE-PROTOCOL.md](../shared/bridge/BRIDGE-PROTOCOL.md)）。
 
 > 当前版本：**v1.4.1**。版本历史：`git tag -l`（Release zip 由 `scripts/release-mac.sh <版本>` 产出）。
 >
@@ -50,9 +50,9 @@ git clone <仓库地址> && cd CodingPlanAssistant
 CODINGPLANASSISTANT_MOCK=1 ./scripts/dev-mac.sh run     # 构建并以前台 mock 模式启动（Ctrl+C 退出）
 ```
 
-`CODINGPLANASSISTANT_MOCK=1` 把节奏引擎的兜底通道换成 `MockProvider`（返回 `docs/bridge-fixtures/snapshot-v1.json` 的内嵌副本：kimi/mimo 双 ok 卡、minimax needs_login、volcengine unavailable，足以覆盖各卡片状态 UI）。桥照常接线——此模式下若真实扩展推送进来，真实数据仍然优先，mock 只占兜底槽。
+`CODINGPLANASSISTANT_MOCK=1` 把节奏引擎的兜底通道换成 `MockProvider`（返回 `../shared/bridge/fixtures/snapshot-v1.json` 的内嵌副本：kimi/mimo 双 ok 卡、minimax needs_login、volcengine unavailable，足以覆盖各卡片状态 UI）。桥照常接线——此模式下若真实扩展推送进来，真实数据仍然优先，mock 只占兜底槽。
 
-关于外部数据源，你**唯一**需要读的是 [docs/BRIDGE-PROTOCOL.md](docs/BRIDGE-PROTOCOL.md)（快照 JSON 契约：平台键、status 归并规则、毫秒 epoch）。桥本身是**可选**的：app 不依赖扩展即可运行，推送缺失对两侧都静默。
+关于外部数据源，你**唯一**需要读的是 [../shared/bridge/BRIDGE-PROTOCOL.md](../shared/bridge/BRIDGE-PROTOCOL.md)（快照 JSON 契约：平台键、status 归并规则、毫秒 epoch）。桥本身是**可选**的：app 不依赖扩展即可运行，推送缺失对两侧都静默。
 
 ## 配对（app ↔ Chrome 扩展）
 

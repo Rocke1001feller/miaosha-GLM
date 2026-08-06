@@ -1,7 +1,7 @@
 /**
- * 桥协议契约测试：消费 UsageBar 仓库的共享夹具 docs/bridge-fixtures/snapshot-v1.json，
+ * 桥协议契约测试：消费 monorepo 共享夹具 shared/bridge/fixtures/snapshot-v1.json，
  * 验证夹具与 lib/usage/types.ts 的 UsageCache 形状一致、pushUsageToBridge 的传输约定
- * 与 UsageBar/docs/BRIDGE-PROTOCOL.md 一致。两侧仓库独立演进，靠该测试锁住契约。
+ * 与 shared/bridge/BRIDGE-PROTOCOL.md 一致。web 与 desktop 两侧靠该测试锁住契约。
  */
 import { describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -9,10 +9,10 @@ import { resolve } from 'node:path';
 import { pushUsageToBridge } from '../../../lib/usage/bridge-push';
 import type { UsageCache, UsagePlatform, UsageStatus } from '../../../lib/usage/types';
 
-// vitest 从扩展仓库根运行；夹具在兄弟仓库 UsageBar 内，相对仓库根定位。
+// vitest 从 web/ 根运行（process.cwd() = web/）；夹具在 monorepo 根的 shared/bridge 内。
 const FIXTURE_PATH = resolve(
   process.cwd(),
-  '../UsageBar/docs/bridge-fixtures/snapshot-v1.json',
+  '../shared/bridge/fixtures/snapshot-v1.json',
 );
 
 const PLATFORMS: UsagePlatform[] = ['minimax', 'kimi', 'mimo', 'volcengine'];

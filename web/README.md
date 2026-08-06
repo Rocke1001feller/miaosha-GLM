@@ -168,7 +168,7 @@ pnpm zip          # 构建并打包 output/miaosha-glm-<version>-chrome.zip
 
 ## 相关项目
 
-- **UsageBar（macOS 菜单栏用量监控）**：已拆分为独立仓库独立演进（本机 `~/Documents/ReachVideo/UsageBar`）。本扩展对它而言是**可选**的数据增强通道——接口契约见该仓库 `docs/BRIDGE-PROTOCOL.md`；不装本扩展，UsageBar 也能经原生通道（Chrome cookie / localStorage LevelDB）显示四平台用量。
+- **UsageBar（macOS 菜单栏用量监控）**：已拆分为独立仓库独立演进（本机 `~/Documents/ReachVideo/UsageBar`）。本扩展对它而言是**可选**的数据增强通道——接口契约见 [`../shared/bridge/BRIDGE-PROTOCOL.md`](../shared/bridge/BRIDGE-PROTOCOL.md)；不装本扩展，UsageBar 也能经原生通道（Chrome cookie / localStorage LevelDB）显示四平台用量。
 
 ---
 
