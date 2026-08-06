@@ -2,7 +2,7 @@
 
 > **智能 Coding Plan 助手** — Chrome MV3 浏览器扩展：多平台 Coding Plan 秒杀抢购 + 买家秀 UGC 社区 + Token 用量监控 + AI 聚合新闻，一站式覆盖 AI 编程套餐的「抢、看、评、读」。
 
-**当前版本：v2.0.0**（前身「智谱秒杀助手」）。秒杀网站的防护策略持续升级，成功率动态变化，欢迎社区贡献代码、反馈问题、分享经验。
+**当前版本：v3.0.0**（前身「智谱秒杀助手」）。秒杀网站的防护策略持续升级，成功率动态变化，欢迎社区贡献代码、反馈问题、分享经验。
 
 ---
 
@@ -168,7 +168,7 @@ pnpm zip          # 构建并打包 output/coding-plan-assistant-web-<version>-c
 
 ## 相关项目
 
-- **UsageBar（macOS 菜单栏用量监控）**：已拆分为独立仓库独立演进（本机 `~/Documents/ReachVideo/UsageBar`）。本扩展对它而言是**可选**的数据增强通道——接口契约见 [`../shared/bridge/BRIDGE-PROTOCOL.md`](../shared/bridge/BRIDGE-PROTOCOL.md)；不装本扩展，UsageBar 也能经原生通道（Chrome cookie / localStorage LevelDB）显示四平台用量。
+- **Coding Plan Assistant（macOS 菜单栏用量监控）**：macOS 应用已并入本 monorepo，源码见 [`desktop/`](../desktop/)（迁入前的独立仓库历史见 archive/desktop-v1 分支）。本扩展对它而言是**可选**的数据增强通道——接口契约见 [`../shared/bridge/BRIDGE-PROTOCOL.md`](../shared/bridge/BRIDGE-PROTOCOL.md)；不装本扩展，它也能经原生通道（Chrome cookie / localStorage LevelDB）显示四平台用量。
 
 ---
 

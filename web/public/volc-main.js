@@ -11,7 +11,7 @@
 const version =
   (typeof document !== 'undefined' && document.currentScript?.dataset?.version) ||
   (typeof chrome !== 'undefined' && chrome?.runtime?.getManifest?.()?.version) ||
-  '2.0.0';
+  '3.0.0';
 
 const isAgent = location.pathname.includes('agentplan');
 

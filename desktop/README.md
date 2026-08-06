@@ -45,7 +45,7 @@ macOS 菜单栏用量监控：把 Kimi Code、小米 MiMo、MiniMax、火山引�
 同事 clone 仓库后即可开发全部三个表面（菜单栏 / 浮层 / 浮窗），数据来自内置 mock 夹具，**不需要** Chrome 扩展、不需要任何浏览器会话：
 
 ```bash
-git clone <仓库地址> && cd CodingPlanAssistant
+git clone https://github.com/Rocke1001feller/coding-plan-assistant.git && cd coding-plan-assistant/desktop
 (cd Packages/UsageCore && swift test)        # 验证工具链与契约测试全绿
 CODINGPLANASSISTANT_MOCK=1 ./scripts/dev-mac.sh run     # 构建并以前台 mock 模式启动（Ctrl+C 退出）
 ```
@@ -134,7 +134,7 @@ CodingPlanAssistant/
     └── release-mac.sh       # Release 打包 zip
 ```
 
-扩展侧源码见仓库根目录 `entrypoints/` 与 `lib/usage/`（WXT + Vitest：`pnpm vitest run`）。
+扩展侧源码见 `web/entrypoints/` 与 `web/lib/usage/`（WXT + Vitest：在 `web/` 目录下运行 `pnpm vitest run`）。
 
 ## 验收步骤（真机终验）
 

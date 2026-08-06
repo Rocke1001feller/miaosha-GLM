@@ -11,14 +11,14 @@ Coding Plan Assistant 是「app + Chrome 扩展」套装：扩展抓取用量并
 | macOS app | `desktop/scripts/release-mac.sh 1.1.0` | `desktop/.build/CodingPlanAssistant-1.1.0.zip` | ad-hoc（未公证） |
 | Chrome 扩展 | `web/` 下 `pnpm zip` | `web/output/coding-plan-assistant-web-<版本>-chrome.zip` | 无（用户开发者模式加载） |
 
-构建前置：Xcode（≥15）、xcodegen、pnpm（本机用 `/Users/separationofconcerns/Library/pnpm/pnpm`）。CLT 机器脚本已自动处理 `DEVELOPER_DIR`。
+构建前置：Xcode（≥15）、xcodegen、pnpm。CLT 机器脚本已自动处理 `DEVELOPER_DIR`。
 
 发布前回归基线（必须全绿）：
 
 ```bash
-(cd web && /Users/separationofconcerns/Library/pnpm/pnpm vitest run)                        # 扩展 245
-(cd desktop/Packages/UsageCore && swift test)                # 56
-(cd desktop/Packages/UsageUI && swift test)                  # 11
+(cd web && pnpm vitest run)                                      # 扩展 253
+(cd desktop/Packages/UsageCore && swift test)                # 97
+(cd desktop/Packages/UsageUI && swift test)                  # 16
 desktop/scripts/dev-mac.sh                                   # Debug 构建
 ```
 
@@ -48,4 +48,4 @@ desktop/scripts/dev-mac.sh                                   # Debug 构建
 ## 版本号约定
 
 - app：`release-mac.sh <版本>` 注入 `MARKETING_VERSION`（如 1.1.0）。
-- 扩展：`package.json` 的 `version`（如 1.4.2），两者独立演进；Release notes 里写清配套关系（哪个 app 版本需要 ≥ 哪个扩展版本）。桥协议（`POST /v1/usage`，Bearer token，快照 JSON 字段）是兼容边界：改协议必须双端同发。
+- 扩展：`package.json` 的 `version`（如 3.0.0），两者独立演进；Release notes 里写清配套关系（哪个 app 版本需要 ≥ 哪个扩展版本）。桥协议（`POST /v1/usage`，Bearer token，快照 JSON 字段）是兼容边界：改协议必须双端同发。

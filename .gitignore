@@ -21,6 +21,6 @@ desktop/CodingPlanAssistant.xcodeproj/
 # ---- 本地会话与工作资料（不进入开源仓库） ----
 .tmp/
 .superpowers/
-.claude/skills/
+.claude/
 worktrees/
 worktree/

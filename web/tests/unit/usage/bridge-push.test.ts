@@ -66,7 +66,9 @@ describe('bridge-push', () => {
     const { default: wxtConfig } = await import('../../../wxt.config');
     const hostPermissions = (wxtConfig as any).manifest?.host_permissions as string[];
     expect(hostPermissions).toContain('http://127.0.0.1/*');
-  });
+    // 动态 import wxt.config 经 vite transform 拉起整条 wxt 依赖链，全量套件
+    // 并行负载下单测可超过默认 5s 超时（隔离运行已 ~2.5s），故放宽到 20s。
+  }, 20000);
 
   it('runBridgePushTick：disabled 时不发请求', async () => {
     const fetchMock = vi.fn(async () => ({ ok: true, status: 200, text: async () => '{}' }) as any);

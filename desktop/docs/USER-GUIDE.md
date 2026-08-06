@@ -28,7 +28,7 @@
 
 1. 解压 `coding-plan-assistant-web-<版本>-chrome.zip`，得到一个文件夹（建议放到固定位置，如 `~/Extensions/coding-plan-assistant-web`，**不要放下载目录后随手删掉**——Chrome 每次启动都要读它）。
 2. Chrome 地址栏输入 `chrome://extensions` 回车，打开右上角「开发者模式」。
-3. 点「加载已解压的扩展程序」，选择刚才解压的文件夹。扩展图标（Z 字样「秒杀助手」）出现在工具栏。
+3. 点「加载已解压的扩展程序」，选择刚才解压的文件夹。扩展图标（纯靛蓝色方块的「智能Coding Plan助手」）出现在工具栏。
 
 ### 第 3 步：配对（app ↔ 扩展，只需一次）
 

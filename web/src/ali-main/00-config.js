@@ -6,7 +6,7 @@ var ALI_VERSION =
     document.currentScript &&
     document.currentScript.dataset &&
     document.currentScript.dataset.version) ||
-  '1.4.2';
+  '3.0.0';
 
 var ALI_CONFIG = {
   platform: 'bailian-codingplan',
